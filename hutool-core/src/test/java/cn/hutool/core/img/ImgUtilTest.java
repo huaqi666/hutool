@@ -25,7 +25,9 @@ public class ImgUtilTest {
 	@Test
 	@Ignore
 	public void scaleTest2() {
-		ImgUtil.scale(FileUtil.file("e:/pic/test.jpg"), FileUtil.file("e:/pic/test_result.jpg"), 0.8f);
+		ImgUtil.scale(
+				FileUtil.file("d:/test/2.png"),
+				FileUtil.file("d:/test/2_result.jpg"), 600, 337, null);
 	}
 
 	@Test
@@ -84,7 +86,7 @@ public class ImgUtilTest {
 	@Test
 	@Ignore
 	public void sliceByRowsAndColsTest() {
-		ImgUtil.sliceByRowsAndCols(FileUtil.file("e:/pic/1.png"), FileUtil.file("e:/pic/dest"), 10, 10);
+		ImgUtil.sliceByRowsAndCols(FileUtil.file("d:/test/logo.jpg"), FileUtil.file("d:/test/dest"), 1, 5);
 	}
 	
 	@Test
