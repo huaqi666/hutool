@@ -1272,27 +1272,36 @@ public class NumberUtil {
 	 * @return 随机int数组
 	 */
 	public static int[] generateRandomNumber(int begin, int end, int size) {
+		// 种子你可以随意生成，但不能重复
+		final int[] seed = ArrayUtil.range(begin, end);
+		return generateRandomNumber(begin, end, size, seed);
+	}
+
+	/**
+	 * 生成不重复随机数 根据给定的最小数字和最大数字，以及随机数的个数，产生指定的不重复的数组
+	 *
+	 * @param begin 最小数字（包含该数）
+	 * @param end   最大数字（不包含该数）
+	 * @param size  指定产生随机数的个数
+	 * @param seed 种子，用于取随机数的int池
+	 * @return 随机int数组
+	 * @since 5.4.5
+	 */
+	public static int[] generateRandomNumber(int begin, int end, int size, int[] seed) {
 		if (begin > end) {
 			int temp = begin;
 			begin = end;
 			end = temp;
 		}
 		// 加入逻辑判断，确保begin<end并且size不能大于该表示范围
-		if ((end - begin) < size) {
-			throw new UtilException("Size is larger than range between begin and end!");
-		}
-		// 种子你可以随意生成，但不能重复
-		int[] seed = new int[end - begin];
+		Assert.isTrue((end - begin) > size, "Size is larger than range between begin and end!");
+		Assert.isTrue(seed.length > size, "Size is larger than seed size!");
 
-		for (int i = begin; i < end; i++) {
-			seed[i - begin] = i;
-		}
-		int[] ranArr = new int[size];
-		Random ran = new Random();
+		final int[] ranArr = new int[size];
 		// 数量你可以自己定义。
 		for (int i = 0; i < size; i++) {
 			// 得到一个位置
-			int j = ran.nextInt(seed.length - i);
+			int j = RandomUtil.randomInt(seed.length - i);
 			// 得到那个位置的数值
 			ranArr[i] = seed[j];
 			// 将最后一个未用的数字放到这里
@@ -1712,7 +1721,7 @@ public class NumberUtil {
 
 	/**
 	 * 比较大小，值相等 返回true<br>
-	 * 此方法通过调用{@link BigDecimal#compareTo(BigDecimal)}方法来判断是否相等<br>
+	 * 此方法通过调用{@link Double#doubleToLongBits(double)}方法来判断是否相等<br>
 	 * 此方法判断值相等时忽略精度的，即0.00 == 0
 	 *
 	 * @param num1 数字1
@@ -1721,7 +1730,21 @@ public class NumberUtil {
 	 * @since 5.4.2
 	 */
 	public static boolean equals(double num1, double num2) {
-		return equals(toBigDecimal(num1), toBigDecimal(num2));
+		return Double.doubleToLongBits(num1) == Double.doubleToLongBits(num2);
+	}
+
+	/**
+	 * 比较大小，值相等 返回true<br>
+	 * 此方法通过调用{@link Double#doubleToLongBits(double)}方法来判断是否相等<br>
+	 * 此方法判断值相等时忽略精度的，即0.00 == 0
+	 *
+	 * @param num1 数字1
+	 * @param num2 数字2
+	 * @return 是否相等
+	 * @since 5.4.5
+	 */
+	public static boolean equals(float num1, float num2) {
+		return Float.floatToIntBits(num1) == Float.floatToIntBits(num2);
 	}
 
 	/**
@@ -1944,20 +1967,20 @@ public class NumberUtil {
 
 	/**
 	 * 数字转字符串<br>
-	 * 调用{@link Number#toString()}，并去除尾小数点儿后多余的0
+	 * 调用{@link Number#toString()}或 {@link BigDecimal#toPlainString()}，并去除尾小数点儿后多余的0
 	 *
 	 * @param number A Number
 	 * @return A String.
 	 */
 	public static String toStr(Number number) {
-		if (null == number) {
-			throw new NullPointerException("Number is null !");
+		Assert.notNull(number, "Number is null !");
+
+		// BigDecimal单独处理，使用非科学计数法
+		if(number instanceof BigDecimal){
+			return toStr((BigDecimal)number);
 		}
 
-		if (false == ObjectUtil.isValidIfNumber(number)) {
-			throw new IllegalArgumentException("Number is non-finite!");
-		}
-
+		Assert.isTrue(isValidNumber(number), "Number is non-finite!");
 		// 去掉小数点儿后多余的0
 		String string = number.toString();
 		if (string.indexOf('.') > 0 && string.indexOf('e') < 0 && string.indexOf('E') < 0) {
@@ -1972,6 +1995,19 @@ public class NumberUtil {
 	}
 
 	/**
+	 * {@link BigDecimal}数字转字符串<br>
+	 * 调用{@link BigDecimal#toPlainString()}，并去除尾小数点儿后多余的0
+	 *
+	 * @param bigDecimal A {@link BigDecimal}
+	 * @return A String.
+	 * @since 5.4.6
+	 */
+	public static String toStr(BigDecimal bigDecimal) {
+		Assert.notNull(bigDecimal, "BigDecimal is null !");
+		return bigDecimal.stripTrailingZeros().toPlainString();
+	}
+
+	/**
 	 * 数字转{@link BigDecimal}
 	 *
 	 * @param number 数字
@@ -1982,6 +2018,17 @@ public class NumberUtil {
 		if (null == number) {
 			return BigDecimal.ZERO;
 		}
+
+		if(number instanceof BigDecimal){
+			return (BigDecimal) number;
+		} else if (number instanceof Long) {
+			return new BigDecimal((Long) number);
+		} else if (number instanceof Integer) {
+			return new BigDecimal((Integer) number);
+		} else if (number instanceof BigInteger) {
+			return new BigDecimal((BigInteger) number);
+		}
+
 		return toBigDecimal(number.toString());
 	}
 
@@ -1994,6 +2041,38 @@ public class NumberUtil {
 	 */
 	public static BigDecimal toBigDecimal(String number) {
 		return (null == number) ? BigDecimal.ZERO : new BigDecimal(number);
+	}
+
+	/**
+	 * 数字转{@link BigInteger}
+	 *
+	 * @param number 数字
+	 * @return {@link BigInteger}
+	 * @since 5.4.5
+	 */
+	public static BigInteger toBigInteger(Number number) {
+		if (null == number) {
+			return BigInteger.ZERO;
+		}
+
+		if(number instanceof BigInteger){
+			return (BigInteger) number;
+		} else if (number instanceof Long) {
+			return BigInteger.valueOf((Long) number);
+		}
+
+		return toBigInteger(number.longValue());
+	}
+
+	/**
+	 * 数字转{@link BigInteger}
+	 *
+	 * @param number 数字
+	 * @return {@link BigInteger}
+	 * @since 5.4.5
+	 */
+	public static BigInteger toBigInteger(String number) {
+		return (null == number) ? BigInteger.ZERO : new BigInteger(number);
 	}
 
 	/**

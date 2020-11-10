@@ -1,6 +1,7 @@
 package cn.hutool.core.lang;
 
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.CharUtil;
 import cn.hutool.core.util.StrUtil;
 
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public class ConsoleTable {
 	private static final char COLUMN_LINE = '|';
 	private static final char CORNER = '+';
 	private static final char SPACE = '\u3000';
+	private static final char LF = CharUtil.LF;
 
 	/**
 	 * 表格头信息
@@ -32,6 +34,16 @@ public class ConsoleTable {
 	 * 每列最大字符个数
 	 */
 	private List<Integer> columnCharNumber;
+
+	/**
+	 * 创建ConsoleTable对象
+	 *
+	 * @return ConsoleTable
+	 * @since 5.4.5
+	 */
+	public static ConsoleTable create(){
+		return new ConsoleTable();
+	}
 
 	/**
 	 * 添加头信息
@@ -65,7 +77,7 @@ public class ConsoleTable {
 	/**
 	 * 填充表格头或者体
 	 *
-	 * @param l 被填充列表
+	 * @param l       被填充列表
 	 * @param columns 填充内容
 	 */
 	private void fillColumns(List<String> l, String[] columns) {
@@ -89,12 +101,26 @@ public class ConsoleTable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		fillBorder(sb);
-		for (List<String> headers : HEADER_LIST) {
-			for (int i = 0; i < headers.size(); i++) {
+		fillRow(sb, HEADER_LIST);
+		fillBorder(sb);
+		fillRow(sb, BODY_LIST);
+		fillBorder(sb);
+		return sb.toString();
+	}
+
+	/**
+	 * 填充表头或者表体信息
+	 *
+	 * @param sb 内容
+	 * @param list 表头列表或者表体列表
+	 */
+	private void fillRow(StringBuilder sb, List<List<String>> list) {
+		for (List<String> r : list) {
+			for (int i = 0; i < r.size(); i++) {
 				if (i == 0) {
 					sb.append(COLUMN_LINE);
 				}
-				String header = headers.get(i);
+				String header = r.get(i);
 				sb.append(SPACE);
 				sb.append(header);
 				sb.append(SPACE);
@@ -107,31 +133,8 @@ public class ConsoleTable {
 				}
 				sb.append(COLUMN_LINE);
 			}
-			sb.append('\n');
+			sb.append(LF);
 		}
-		fillBorder(sb);
-		for (List<String> bodys : BODY_LIST) {
-			for (int i = 0; i < bodys.size(); i++) {
-				if (i == 0) {
-					sb.append(COLUMN_LINE);
-				}
-				String body = bodys.get(i);
-				sb.append(SPACE);
-				sb.append(body);
-				sb.append(SPACE);
-				int l = body.length();
-				int lw = columnCharNumber.get(i);
-				if (lw > l) {
-					for (int j = 0; j < (lw - l); j++) {
-						sb.append(SPACE);
-					}
-				}
-				sb.append(COLUMN_LINE);
-			}
-			sb.append('\n');
-		}
-		fillBorder(sb);
-		return sb.toString();
 	}
 
 	/**
@@ -145,7 +148,7 @@ public class ConsoleTable {
 			sb.append(Convert.toSBC(StrUtil.fillAfter("", ROW_LINE, width + 2)));
 			sb.append(CORNER);
 		}
-		sb.append('\n');
+		sb.append(LF);
 	}
 
 	/**

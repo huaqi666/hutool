@@ -1117,6 +1117,23 @@ public class CollUtil {
 
 	/**
 	 * 对集合按照指定长度分段，每一个段为单独的集合，返回这个集合的列表
+	 * <p>
+	 * 需要特别注意的是，此方法调用{@link List#subList(int, int)}切分List，
+	 * 此方法返回的是原List的视图，也就是说原List有变更，切分后的结果也会变更。
+	 * </p>
+	 *
+	 * @param <T>  集合元素类型
+	 * @param list 列表
+	 * @param size 每个段的长度
+	 * @return 分段列表
+	 * @since 5.4.5
+	 */
+	public static <T> List<List<T>> splitList(List<T> list, int size) {
+		return ListUtil.split(list, size);
+	}
+
+	/**
+	 * 对集合按照指定长度分段，每一个段为单独的集合，返回这个集合的列表
 	 *
 	 * @param <T>        集合元素类型
 	 * @param collection 集合
@@ -1354,7 +1371,7 @@ public class CollUtil {
 	 * @param <R>        返回集合元素类型
 	 * @param collection 原集合
 	 * @param func       编辑函数
-	 * @param ignoreNull 是否忽略空值
+	 * @param ignoreNull 是否忽略空值，这里的空值包括函数处理前和处理后的null值
 	 * @return 抽取后的新列表
 	 * @since 5.3.5
 	 */
@@ -1365,8 +1382,11 @@ public class CollUtil {
 		}
 
 		R value;
-		for (T bean : collection) {
-			value = func.apply(bean);
+		for (T t : collection) {
+			if(null == t && ignoreNull){
+				continue;
+			}
+			value = func.apply(t);
 			if (null == value && ignoreNull) {
 				continue;
 			}
@@ -2529,6 +2549,18 @@ public class CollUtil {
 	// ------------------------------------------------------------------------------------------------- forEach
 
 	/**
+	 * 循环遍历 {@link Iterable}，使用{@link Consumer} 接受遍历的每条数据，并针对每条数据做处理
+	 *
+	 * @param <T>      集合元素类型
+	 * @param iterable {@link Iterable}
+	 * @param consumer {@link Consumer} 遍历的每条数据处理器
+	 * @since 5.4.7
+	 */
+	public static <T> void forEach(Iterable<T> iterable, Consumer<T> consumer) {
+		forEach(iterable.iterator(), consumer);
+	}
+
+	/**
 	 * 循环遍历 {@link Iterator}，使用{@link Consumer} 接受遍历的每条数据，并针对每条数据做处理
 	 *
 	 * @param <T>      集合元素类型
@@ -2862,7 +2894,8 @@ public class CollUtil {
 	// ---------------------------------------------------------------------------------------------- Interface start
 
 	/**
-	 * 针对一个参数做相应的操作
+	 * 针对一个参数做相应的操作<br>
+	 * 此函数接口与JDK8中Consumer不同是多提供了index参数，用于标记遍历对象是第几个。
 	 *
 	 * @param <T> 处理参数类型
 	 * @author Looly

@@ -1,10 +1,12 @@
 package cn.hutool.core.util;
 
+import cn.hutool.core.convert.Convert;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Set;
 
 /**
  * {@link NumberUtil} 单元测试类
@@ -263,10 +265,26 @@ public class NumberUtilTest {
 	
 	@Test
 	public void isPowerOfTwoTest() {
-		Assert.assertEquals(false, NumberUtil.isPowerOfTwo(-1));
-		Assert.assertEquals(true, NumberUtil.isPowerOfTwo(16));
-		Assert.assertEquals(true, NumberUtil.isPowerOfTwo(65536));
-		Assert.assertEquals(true, NumberUtil.isPowerOfTwo(1));
-		Assert.assertEquals(false, NumberUtil.isPowerOfTwo(17));
+		Assert.assertFalse(NumberUtil.isPowerOfTwo(-1));
+		Assert.assertTrue(NumberUtil.isPowerOfTwo(16));
+		Assert.assertTrue(NumberUtil.isPowerOfTwo(65536));
+		Assert.assertTrue(NumberUtil.isPowerOfTwo(1));
+		Assert.assertFalse(NumberUtil.isPowerOfTwo(17));
+	}
+
+	@Test
+	public void generateRandomNumberTest(){
+		final int[] ints = NumberUtil.generateRandomNumber(10, 20, 5);
+		Assert.assertEquals(5, ints.length);
+		final Set<?> set = Convert.convert(Set.class, ints);
+		Assert.assertEquals(5, set.size());
+	}
+
+	@Test
+	public void toStrTest(){
+		Assert.assertEquals("1", NumberUtil.toStr(new BigDecimal("1.0000000000")));
+		Assert.assertEquals("0", NumberUtil.toStr(NumberUtil.sub(new BigDecimal("9600.00000"), new BigDecimal("9600.00000"))));
+		Assert.assertEquals("0", NumberUtil.toStr(NumberUtil.sub(new BigDecimal("9600.0000000000"), new BigDecimal("9600.000000"))));
+		Assert.assertEquals("0", NumberUtil.toStr(new BigDecimal("9600.00000").subtract(new BigDecimal("9600.000000000"))));
 	}
 }
