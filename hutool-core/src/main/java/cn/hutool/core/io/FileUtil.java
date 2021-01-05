@@ -1,7 +1,6 @@
 package cn.hutool.core.io;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.io.file.FileCopier;
 import cn.hutool.core.io.file.FileMode;
 import cn.hutool.core.io.file.FileNameUtil;
@@ -173,13 +172,7 @@ public class FileUtil extends PathUtil {
 	 * @return 文件列表
 	 */
 	public static List<File> loopFiles(File file, FileFilter fileFilter) {
-		if (null == file || false == file.exists()) {
-			return ListUtil.empty();
-		}
-
-		final List<File> fileList = new ArrayList<>();
-		walkFiles(file, fileList::add);
-		return fileList;
+		return loopFiles(file, -1, fileFilter);
 	}
 
 	/**
@@ -216,7 +209,7 @@ public class FileUtil extends PathUtil {
 	 * @return 文件列表
 	 * @since 4.6.3
 	 */
-	public static List<File> loopFiles(File file, int maxDepth, final FileFilter fileFilter) {
+	public static List<File> loopFiles(File file, int maxDepth, FileFilter fileFilter) {
 		return loopFiles(file.toPath(), maxDepth, fileFilter);
 	}
 
@@ -2921,7 +2914,20 @@ public class FileUtil extends PathUtil {
 	 * @throws IORuntimeException IO异常
 	 */
 	public static File writeFromStream(InputStream in, File dest) throws IORuntimeException {
-		return FileWriter.create(dest).writeFromStream(in);
+		return writeFromStream(in, dest, true);
+	}
+
+	/**
+	 * 将流的内容写入文件
+	 *
+	 * @param dest 目标文件
+	 * @param in   输入流
+	 * @return dest
+	 * @throws IORuntimeException IO异常
+	 * @since 5.5.6
+	 */
+	public static File writeFromStream(InputStream in, File dest, boolean isCloseIn) throws IORuntimeException {
+		return FileWriter.create(dest).writeFromStream(in, isCloseIn);
 	}
 
 	/**
@@ -3176,7 +3182,16 @@ public class FileUtil extends PathUtil {
 	 * @since 4.1.15
 	 */
 	public static String getMimeType(String filePath) {
-		return URLConnection.getFileNameMap().getContentTypeFor(filePath);
+		String contentType = URLConnection.getFileNameMap().getContentTypeFor(filePath);
+		if(null == contentType){
+			// 补充一些常用的mimeType
+			if(filePath.endsWith(".css")){
+				contentType = "text/css";
+			} else if(filePath.endsWith(".js")){
+				contentType = "application/x-javascript";
+			}
+		}
+		return contentType;
 	}
 
 	/**
@@ -3201,7 +3216,7 @@ public class FileUtil extends PathUtil {
 	public static boolean isSub(File parent, File sub) {
 		Assert.notNull(parent);
 		Assert.notNull(sub);
-		return sub.toPath().startsWith(parent.toPath());
+		return isSub(parent.toPath(), sub.toPath());
 	}
 
 	/**
