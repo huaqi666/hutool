@@ -15,26 +15,26 @@
 	<a target="_blank" href="https://license.coscl.org.cn/MulanPSL2/">
 		<img src="https://img.shields.io/:license-MulanPSL2-blue.svg" />
 	</a>
-	<a target="_blank" href="https://www.oracle.com/technetwork/java/javase/downloads/index.html">
+	<a target="_blank" href="https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html">
 		<img src="https://img.shields.io/badge/JDK-8+-green.svg" />
 	</a>
-	<a target="_blank" href="https://travis-ci.org/looly/hutool">
-		<img src="https://travis-ci.org/looly/hutool.svg?branch=v4-master" />
+	<a target="_blank" href="https://travis-ci.org/dromara/hutool">
+		<img src="https://travis-ci.org/dromara/hutool.svg?branch=v4-master" />
 	</a>
-	<a href="https://www.codacy.com/app/looly/hutool?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=looly/hutool&amp;utm_campaign=Badge_Grade">
+	<a href="https://www.codacy.com/app/dromara/hutool">
 		<img src="https://api.codacy.com/project/badge/Grade/3e1b8a70248c46579b7b0d01d60c6377"/>
 	</a>
-	<a href="https://codecov.io/gh/looly/hutool">
-		<img src="https://codecov.io/gh/looly/hutool/branch/v4-master/graph/badge.svg" />
+	<a href="https://codecov.io/gh/dromara/hutool">
+		<img src="https://codecov.io/gh/dromara/hutool/branch/v5-master/graph/badge.svg" />
 	</a>
 	<a target="_blank" href="https://gitter.im/hutool/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge">
 		<img src="https://badges.gitter.im/hutool/Lobby.svg" />
 	</a>
-	<a target="_blank" href='https://gitee.com/loolly/hutool/stargazers'>
-		<img src='https://gitee.com/loolly/hutool/badge/star.svg?theme=gvp' alt='star'/>
+	<a target="_blank" href='https://gitee.com/dromara/hutool/stargazers'>
+		<img src='https://gitee.com/dromara/hutool/badge/star.svg?theme=gvp' alt='star'/>
 	</a>
-	<a target="_blank" href='https://github.com/looly/hutool'>
-		<img src="https://img.shields.io/github/stars/looly/hutool.svg?style=social" alt="github star"/>
+	<a target="_blank" href='https://github.com/dromara/hutool'>
+		<img src="https://img.shields.io/github/stars/dromara/hutool.svg?style=social" alt="github star"/>
 	</a>
 	<a target="_blank" href='https://app.netlify.com/sites/hutool/deploys'>
 		<img src="https://api.netlify.com/api/v1/badges/7e0824f9-5f9a-4df0-89dd-b2fccfbeccb1/deploy-status" alt="netlify"/>
@@ -112,7 +112,7 @@ Each module can be introduced individually, or all modules can be introduced by 
 
 [Chinese documentation](https://www.hutool.cn/docs/)
 
-[API](https://apidoc.gitee.com/loolly/hutool/)
+[API](https://apidoc.gitee.com/dromara/hutool/)
 
 [Video](https://www.bilibili.com/video/BV1bQ4y1M7d9?p=2)
 
@@ -125,19 +125,19 @@ Each module can be introduced individually, or all modules can be introduced by 
 <dependency>
     <groupId>cn.hutool</groupId>
     <artifactId>hutool-all</artifactId>
-    <version>5.5.8</version>
+    <version>5.6.1</version>
 </dependency>
 ```
 
 ### Gradle
 ```
-compile 'cn.hutool:hutool-all:5.5.8'
+compile 'cn.hutool:hutool-all:5.6.1'
 ```
 
 ## Download
 
-- [Maven1](https://repo1.maven.org/maven2/cn/hutool/hutool-all/5.5.8/)
-- [Maven2](http://repo2.maven.org/maven2/cn/hutool/hutool-all/5.5.8/)
+- [Maven1](https://repo1.maven.org/maven2/cn/hutool/hutool-all/5.6.1/)
+- [Maven2](http://repo2.maven.org/maven2/cn/hutool/hutool-all/5.6.1/)
 
 > note:
 > Hutool 5.x supports JDK8+ and is not tested on Android platforms, and cannot guarantee that all tool classes or tool methods are available.
@@ -147,9 +147,9 @@ compile 'cn.hutool:hutool-all:5.5.8'
 
 Download the entire project source code
 
-gitee：[https://gitee.com/loolly/hutool](https://gitee.com/loolly/hutool) 
+gitee：[https://gitee.com/dromara/hutool](https://gitee.com/dromara/hutool) 
 
-github:https://github.com/looly/hutool
+github:[https://github.com/dromara/hutool](https://github.com/dromara/hutool)
 
 ```sh
 cd ${hutool}
@@ -173,8 +173,8 @@ Hutool's source code is divided into two branches:
 
 When submitting feedback, please indicate which JDK version, Hutool version, and related dependency library version you are using.
 
-- [Gitee issue](https://gitee.com/loolly/hutool/issues)
-- [Github issue](https://github.com/looly/hutool/issues)
+- [Gitee issue](https://gitee.com/dromara/hutool/issues)
+- [Github issue](https://github.com/dromara/hutool/issues)
 
 ### Principles of PR(pull request)
 
@@ -187,14 +187,22 @@ Hutool welcomes anyone to contribute code to Hutool, but the author suffers from
 
 -------------------------------------------------------------------------------
 
+## Star Hutool
+
+[![Giteye chart](https://chart.giteye.net/gitee/dromara/hutool/GMSL7VDA.png)](https://giteye.net/chart/GMSL7VDA)
+
 ## Donate
 
 If you think Hutool is good, you can donate to buy tshe author a pack of chili~, thanks in advance ^_^.
 
-[gitee donate](https://gitee.com/loolly/hutool)
+[gitee donate](https://gitee.com/dromara/hutool)
 
 ## WeChat Official Account
 
-Welcome to the official account of Hutool cooperation.
+#### Welcome to the official account of Hutool cooperation.
 
 ![Java2B](https://cdn.jsdelivr.net/gh/looly/hutool-site/images/qrcode.jpg)
+
+#### Welcome to organization Dromara
+
+![Dromara](https://dromara.org/img/qrcode/qrcode_1.png)
