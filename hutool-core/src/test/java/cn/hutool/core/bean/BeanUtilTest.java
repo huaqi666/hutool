@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.Accessors;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,7 +74,7 @@ public class BeanUtilTest {
 
 	@Test
 	public void fillBeanWithMapIgnoreCaseTest() {
-		HashMap<String, Object> map = CollUtil.newHashMap();
+		HashMap<String, Object> map = MapUtil.newHashMap();
 		map.put("Name", "Joe");
 		map.put("aGe", 12);
 		map.put("openId", "DFDFSDFWERWER");
@@ -104,7 +105,7 @@ public class BeanUtilTest {
 	 */
 	@Test
 	public void toBeanIgnoreErrorTest() {
-		HashMap<String, Object> map = CollUtil.newHashMap();
+		HashMap<String, Object> map = MapUtil.newHashMap();
 		map.put("name", "Joe");
 		// 错误的类型，此处忽略
 		map.put("age", "aaaaaa");
@@ -117,7 +118,7 @@ public class BeanUtilTest {
 
 	@Test
 	public void mapToBeanIgnoreCaseTest() {
-		HashMap<String, Object> map = CollUtil.newHashMap();
+		HashMap<String, Object> map = MapUtil.newHashMap();
 		map.put("Name", "Joe");
 		map.put("aGe", 12);
 
@@ -128,12 +129,12 @@ public class BeanUtilTest {
 
 	@Test
 	public void mapToBeanTest() {
-		HashMap<String, Object> map = CollUtil.newHashMap();
+		HashMap<String, Object> map = MapUtil.newHashMap();
 		map.put("a_name", "Joe");
 		map.put("b_age", 12);
 
 		// 别名，用于对应bean的字段名
-		HashMap<String, String> mapping = CollUtil.newHashMap();
+		HashMap<String, String> mapping = MapUtil.newHashMap();
 		mapping.put("a_name", "name");
 		mapping.put("b_age", "age");
 
@@ -147,7 +148,7 @@ public class BeanUtilTest {
 	 */
 	@Test
 	public void mapToBeanTest2() {
-		HashMap<String, Object> map = CollUtil.newHashMap();
+		HashMap<String, Object> map = MapUtil.newHashMap();
 		map.put("name", "Joe");
 		map.put("age", 12);
 
@@ -164,7 +165,7 @@ public class BeanUtilTest {
 	public void mapToBeanWinErrorTest() {
 		Map<String, String> map = new HashMap<>();
 		map.put("age", "哈哈");
-		Person user = BeanUtil.toBean(map, Person.class);
+		BeanUtil.toBean(map, Person.class);
 	}
 
 	@Test
@@ -300,6 +301,24 @@ public class BeanUtilTest {
 		SubPerson2 p3 = new SubPerson2();
 		BeanUtil.copyProperties(p1, p3);
 		Assert.assertTrue(p3.getSlow());
+	}
+
+	@Test
+	public void copyPropertiesIgnoreNullTest() {
+		SubPerson p1 = new SubPerson();
+		p1.setSlow(true);
+		p1.setName(null);
+
+		SubPerson2 p2 = new SubPerson2();
+		p2.setName("oldName");
+
+		// null值不覆盖目标属性
+		BeanUtil.copyProperties(p1, p2, CopyOptions.create().ignoreNullValue());
+		Assert.assertEquals("oldName", p2.getName());
+
+		// null覆盖目标属性
+		BeanUtil.copyProperties(p1, p2);
+		Assert.assertNull(p2.getName());
 	}
 
 	@Test
@@ -520,6 +539,14 @@ public class BeanUtilTest {
 		Assert.assertEquals(new Long(123456L), station2.getId());
 	}
 
+	static class Station extends Tree<Long> {}
+	static class Tree<T> extends Entity<T> {}
+
+	@Data
+	public static class Entity<T> {
+		private T id;
+	}
+
 	@Test
 	public void copyListTest() {
 		Student student = new Student();
@@ -543,23 +570,9 @@ public class BeanUtilTest {
 
 	}
 
-	public static class Station extends Tree<Station, Long> {
-
-	}
-
-	public static class Tree<E, T> extends Entity<T> {
-
-	}
-
-	@Data
-	public static class Entity<T> {
-		private T id;
-	}
-
 	@Test
 	public void toMapTest() {
 		// 测试转map的时候返回key
-		String name = null;
 		PrivilegeIClassification a = new PrivilegeIClassification();
 		a.setId("1");
 		a.setName("2");
@@ -623,5 +636,68 @@ public class BeanUtilTest {
 		String name;
 		int age;
 		Long no;
+	}
+
+	/**
+	 * @author dazer
+	 *  copyProperties(Object source, Object target, CopyOptions copyOptions)
+	 *  当：copyOptions的 setFieldNameEditor 不为空的时候，有bug,这里进行修复；
+	 */
+	@Test
+	public void beanToBeanCopyOptionsTest() {
+		ChildVo1 childVo1 = new ChildVo1();
+		childVo1.setChild_address("中国北京五道口");
+		childVo1.setChild_name("张三");
+		childVo1.setChild_father_name("张无忌");
+		childVo1.setChild_mother_name("赵敏敏");
+
+		CopyOptions copyOptions = CopyOptions.create().
+				//setIgnoreNullValue(true).
+				//setIgnoreCase(false).
+						setFieldNameEditor(StrUtil::toUnderlineCase);
+
+		ChildVo2 childVo2 = new ChildVo2();
+		BeanUtil.copyProperties(childVo1, childVo2, copyOptions);
+
+		Assert.assertEquals(childVo1.getChild_address(), childVo2.getChildAddress());
+		Assert.assertEquals(childVo1.getChild_name(), childVo2.getChildName());
+		Assert.assertEquals(childVo1.getChild_father_name(), childVo2.getChildFatherName());
+		Assert.assertEquals(childVo1.getChild_mother_name(), childVo2.getChildMotherName());
+	}
+
+	@Data
+	public static class ChildVo1 {
+		String child_name;
+		String child_address;
+		String child_mother_name;
+		String child_father_name;
+	}
+
+	@Data
+	public static class ChildVo2 {
+		String childName;
+		String childAddress;
+		String childMotherName;
+		String childFatherName;
+	}
+
+	@Test
+	public void issueI41WKPTest(){
+		Test1 t1 = new Test1().setStrList(ListUtil.toList("list"));
+		Test2 t2_hu = new Test2();
+		BeanUtil.copyProperties(t1, t2_hu, CopyOptions.create().setIgnoreError(true));
+		Assert.assertNull(t2_hu.getStrList());
+	}
+
+	@Data
+	@Accessors(chain = true)
+	public static class Test1 {
+		private List<String> strList;
+	}
+
+	@Data
+	@Accessors(chain = true)
+	public static class Test2 {
+		private List<Integer> strList;
 	}
 }

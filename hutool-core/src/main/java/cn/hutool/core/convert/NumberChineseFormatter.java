@@ -59,7 +59,7 @@ public class NumberChineseFormatter {
 	 * @return 中文
 	 */
 	public static String format(double amount, boolean isUseTraditional, boolean isMoneyMode) {
-		if (amount > 99999999999999.99 || amount < -99999999999999.99) {
+		if (amount > 99_9999_9999_9999.99 || amount < -99999999999999.99) {
 			throw new IllegalArgumentException("Number support only: (-99999999999999.99 ～ 99999999999999.99)！");
 		}
 
@@ -77,33 +77,41 @@ public class NumberChineseFormatter {
 
 		//将数字以万为单位分为多份
 		int[] parts = new int[20];
-		int numParts = 0;
+		int partsCount = 0;
 		for (int i = 0; temp != 0; i++) {
 			int part = (int) (temp % 10000);
 			parts[i] = part;
-			numParts++;
+			partsCount++;
 			temp = temp / 10000;
 		}
 
-		boolean beforeWanIsZero = true; // 标志“万”下面一级是不是 0
+		boolean underWanIsZero = true; // 标志“万”下面一级是不是 0
 
 		StringBuilder chineseStr = new StringBuilder();
-		for (int i = 0; i < numParts; i++) {
+		for (int i = 0; i < partsCount; i++) {
 			final String partChinese = toChinese(parts[i], isUseTraditional);
 			if (i % 2 == 0) {
-				beforeWanIsZero = StrUtil.isEmpty(partChinese);
+				underWanIsZero = StrUtil.isEmpty(partChinese);
 			}
 
+			// TODO 此处逻辑过于复杂，等待整理重构
 			if (i != 0) {
 				if (i % 2 == 0) {
+					if (parts[i - 1] < 1000) {
+						// 如果"亿"的部分不为 0, 而"亿"以下的部分小于 1000，则亿后面应该跟“零”，如一亿零三十五万
+						chineseStr.insert(0, "零");
+					}
 					chineseStr.insert(0, "亿");
 				} else {
-					if ("".equals(partChinese) && false == beforeWanIsZero) {
+					if (StrUtil.isEmpty(partChinese) && false == underWanIsZero) {
 						// 如果“万”对应的 part 为 0，而“万”下面一级不为 0，则不加“万”，而加“零”
 						chineseStr.insert(0, "零");
 					} else {
 						if (parts[i - 1] < 1000 && parts[i - 1] > 0) {
-							// 如果"万"的部分不为 0, 而"万"前面的部分小于 1000 大于 0， 则万后面应该跟“零”
+							// 如果"万"的部分不为 0, 而"万"以下的部分小于 1000 大于 0， 则万后面应该跟“零”，如一万零三百
+							chineseStr.insert(0, "零");
+						} else if(parts[i] > 0 && parts[i] % 10 == 0){
+							// 如果万的部分没有个位数，需跟“零”，如十万零八千
 							chineseStr.insert(0, "零");
 						}
 						if (parts[i] > 0) {
@@ -241,7 +249,14 @@ public class NumberChineseFormatter {
 					section = 0;
 				} else {
 					// 非节单位，和单位前的单数字组合为值
-					section += (number * unit.value);
+					int unitNumber = number;
+					if(0 == number && 0 == i){
+						// issue#1726，对于单位开头的数组，默认赋予1
+						// 十二 -> 一十二
+						// 百二 -> 一百二
+						unitNumber = 1;
+					}
+					section += (unitNumber * unit.value);
 				}
 				number = 0;
 			}

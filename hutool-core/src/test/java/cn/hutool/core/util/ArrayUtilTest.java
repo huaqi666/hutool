@@ -1,8 +1,6 @@
 package cn.hutool.core.util;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.lang.Editor;
-import cn.hutool.core.lang.Filter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -79,23 +77,23 @@ public class ArrayUtilTest {
 	}
 
 	@Test
-	public void filterTest() {
+	public void filterEditTest() {
 		Integer[] a = {1, 2, 3, 4, 5, 6};
-		Integer[] filter = ArrayUtil.filter(a, (Editor<Integer>) t -> (t % 2 == 0) ? t : null);
+		Integer[] filter = ArrayUtil.edit(a, t -> (t % 2 == 0) ? t : null);
 		Assert.assertArrayEquals(filter, new Integer[]{2, 4, 6});
 	}
 
 	@Test
 	public void filterTestForFilter() {
 		Integer[] a = {1, 2, 3, 4, 5, 6};
-		Integer[] filter = ArrayUtil.filter(a, (Filter<Integer>) t -> t % 2 == 0);
+		Integer[] filter = ArrayUtil.filter(a, t -> t % 2 == 0);
 		Assert.assertArrayEquals(filter, new Integer[]{2, 4, 6});
 	}
 
 	@Test
-	public void filterTestForEditor() {
+	public void editTest() {
 		Integer[] a = {1, 2, 3, 4, 5, 6};
-		Integer[] filter = ArrayUtil.filter(a, (Editor<Integer>) t -> (t % 2 == 0) ? t * 10 : t);
+		Integer[] filter = ArrayUtil.edit(a, t -> (t % 2 == 0) ? t * 10 : t);
 		Assert.assertArrayEquals(filter, new Integer[]{1, 20, 3, 40, 5, 60});
 	}
 
@@ -359,6 +357,14 @@ public class ArrayUtilTest {
 	}
 
 	@Test
+	public void indexOfSubTest2(){
+		Integer[] a = {0x12, 0x56, 0x34, 0x56, 0x78, 0x9A};
+		Integer[] b = {0x56, 0x78};
+		int i = ArrayUtil.indexOfSub(a, b);
+		Assert.assertEquals(3, i);
+	}
+
+	@Test
 	public void lastIndexOfSubTest() {
 		Integer[] a = {0x12, 0x34, 0x56, 0x78, 0x9A};
 		Integer[] b = {0x56, 0x78};
@@ -389,10 +395,25 @@ public class ArrayUtilTest {
 	}
 
 	@Test
+	public void lastIndexOfSubTest2(){
+		Integer[] a = {0x12, 0x56, 0x78, 0x56, 0x21, 0x9A};
+		Integer[] b = {0x56, 0x78};
+		int i = ArrayUtil.indexOfSub(a, b);
+		Assert.assertEquals(1, i);
+	}
+
+	@Test
 	public void reverseTest(){
 		int[] a = {1,2,3,4};
 		final int[] reverse = ArrayUtil.reverse(a);
 		Assert.assertArrayEquals(new int[]{4,3,2,1}, reverse);
+	}
+
+	@Test
+	public void reverseTest2s(){
+		Object[] a = {"1",'2',"3",4};
+		final Object[] reverse = ArrayUtil.reverse(a);
+		Assert.assertArrayEquals(new Object[]{4,"3",'2',"1"}, reverse);
 	}
 
 	@Test

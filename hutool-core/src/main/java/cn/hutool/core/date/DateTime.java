@@ -3,6 +3,7 @@ package cn.hutool.core.date;
 import cn.hutool.core.date.format.DateParser;
 import cn.hutool.core.date.format.DatePrinter;
 import cn.hutool.core.date.format.FastDateFormat;
+import cn.hutool.core.date.format.GlobalCustomFormat;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
@@ -251,7 +252,9 @@ public class DateTime extends Date {
 	 * @see DatePattern
 	 */
 	public DateTime(CharSequence dateStr, String format) {
-		this(dateStr, DateUtil.newSimpleFormat(format));
+		this(GlobalCustomFormat.isCustomFormat(format)
+				? GlobalCustomFormat.parse(dateStr, format)
+				: parse(dateStr, DateUtil.newSimpleFormat(format)));
 	}
 
 	/**
@@ -326,8 +329,7 @@ public class DateTime extends Date {
 		//noinspection MagicConstant
 		cal.add(datePart.getValue(), offset);
 
-		DateTime dt = ObjectUtil.clone(this);
-		return dt.setTimeInternal(cal.getTimeInMillis());
+		return ObjectUtil.clone(this).setTimeInternal(cal.getTimeInMillis());
 	}
 	// -------------------------------------------------------------------- offset end
 
@@ -572,17 +574,6 @@ public class DateTime extends Date {
 	}
 
 	/**
-	 * 获得指定日期的毫秒数部分<br>
-	 *
-	 * @return 毫秒数
-	 * @deprecated 拼写错误，请使用{@link #millisecond()}
-	 */
-	@Deprecated
-	public int millsecond() {
-		return getField(DateField.MILLISECOND);
-	}
-
-	/**
 	 * 是否为上午
 	 *
 	 * @return 是否为上午
@@ -735,8 +726,8 @@ public class DateTime extends Date {
 	 * 当前日期是否在日期指定范围内<br>
 	 * 起始日期和结束日期可以互换
 	 *
-	 * @param beginDate 起始日期
-	 * @param endDate   结束日期
+	 * @param beginDate 起始日期（包含）
+	 * @param endDate   结束日期（包含）
 	 * @return 是否在范围内
 	 * @since 3.0.8
 	 */

@@ -2,6 +2,7 @@ package cn.hutool.core.convert;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateException;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.TypeReference;
 import cn.hutool.core.util.ByteUtil;
 import lombok.AllArgsConstructor;
@@ -303,5 +304,17 @@ public class ConvertTest {
 	public void toDateTest(){
 		// 默认转换失败报错而不是返回null
 		Convert.convert(Date.class, "aaaa");
+	}
+
+	@Test
+	public void toDateTest2(){
+		final Date date = Convert.toDate("2021-01");
+		Assert.assertNull(date);
+	}
+
+	@Test
+	public void toSqlDateTest(){
+		final java.sql.Date date = Convert.convert(java.sql.Date.class, DateUtil.parse("2021-07-28"));
+		Assert.assertEquals("2021-07-28", date.toString());
 	}
 }
