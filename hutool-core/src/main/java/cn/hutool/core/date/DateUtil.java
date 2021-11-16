@@ -686,6 +686,19 @@ public class DateUtil extends CalendarUtil {
 	/**
 	 * 构建DateTime对象
 	 *
+	 * @param dateStr Date字符串
+	 * @param parser  格式化器,{@link FastDateFormat}
+	 * @param lenient 是否宽容模式
+	 * @return DateTime对象
+	 * @since 5.7.14
+	 */
+	public static DateTime parse(CharSequence dateStr, DateParser parser, boolean lenient) {
+		return new DateTime(dateStr, parser);
+	}
+
+	/**
+	 * 构建DateTime对象
+	 *
 	 * @param dateStr   Date字符串
 	 * @param formatter 格式化器,{@link DateTimeFormatter}
 	 * @return DateTime对象
@@ -809,6 +822,8 @@ public class DateUtil extends CalendarUtil {
 	 * <li>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</li>
 	 * <li>yyyy-MM-dd'T'HH:mm:ssZ</li>
 	 * <li>yyyy-MM-dd'T'HH:mm:ss.SSSZ</li>
+	 * <li>yyyy-MM-dd'T'HH:mm:ss+0800</li>
+	 * <li>yyyy-MM-dd'T'HH:mm:ss+08:00</li>
 	 * </ol>
 	 *
 	 * @param utcString UTC时间
@@ -832,14 +847,28 @@ public class DateUtil extends CalendarUtil {
 			if (length <= patternLength - 4 && length >= patternLength - 6) {
 				return parse(utcString, DatePattern.UTC_MS_FORMAT);
 			}
+		} else if (StrUtil.contains(utcString, '+')) {
+			// 去除类似2019-06-01T19:45:43 +08:00加号前的空格
+			utcString = utcString.replace(" +", "+");
+			final String zoneOffset = StrUtil.subAfter(utcString, '+', true);
+			if (StrUtil.isBlank(zoneOffset)) {
+				throw new DateException("Invalid format: [{}]", utcString);
+			}
+			if (false == StrUtil.contains(zoneOffset, ':')) {
+				// +0800转换为+08:00
+				final String pre = StrUtil.subBefore(utcString, '+', true);
+				utcString = pre + "+" + zoneOffset.substring(0, 2) + ":" + "00";
+			}
+
+			if (StrUtil.contains(utcString, CharUtil.DOT)) {
+				// 带毫秒，格式类似：2018-09-13T05:34:31.999+08:00
+				return parse(utcString, DatePattern.UTC_MS_WITH_XXX_OFFSET_FORMAT);
+			} else {
+				// 格式类似：2018-09-13T05:34:31+08:00
+				return parse(utcString, DatePattern.UTC_WITH_XXX_OFFSET_FORMAT);
+			}
 		} else {
-			if (length == DatePattern.UTC_WITH_ZONE_OFFSET_PATTERN.length() + 2 || length == DatePattern.UTC_WITH_ZONE_OFFSET_PATTERN.length() + 3) {
-				// 格式类似：2018-09-13T05:34:31+0800 或 2018-09-13T05:34:31+08:00
-				return parse(utcString, DatePattern.UTC_WITH_ZONE_OFFSET_FORMAT);
-			} else if (length == DatePattern.UTC_MS_WITH_ZONE_OFFSET_PATTERN.length() + 2 || length == DatePattern.UTC_MS_WITH_ZONE_OFFSET_PATTERN.length() + 3) {
-				// 格式类似：2018-09-13T05:34:31.999+0800 或 2018-09-13T05:34:31.999+08:00
-				return parse(utcString, DatePattern.UTC_MS_WITH_ZONE_OFFSET_FORMAT);
-			} else if (length == DatePattern.UTC_SIMPLE_PATTERN.length() - 2) {
+			if (length == DatePattern.UTC_SIMPLE_PATTERN.length() - 2) {
 				// 格式类似：2018-09-13T05:34:31
 				return parse(utcString, DatePattern.UTC_SIMPLE_FORMAT);
 			} else if (StrUtil.contains(utcString, CharUtil.DOT)) {
@@ -883,6 +912,7 @@ public class DateUtil extends CalendarUtil {
 	 * <li>HH时mm分ss秒</li>
 	 * <li>yyyy-MM-dd HH:mm</li>
 	 * <li>yyyy-MM-dd HH:mm:ss.SSS</li>
+	 * <li>yyyy-MM-dd HH:mm:ss.SSSSSS</li>
 	 * <li>yyyyMMddHHmmss</li>
 	 * <li>yyyyMMddHHmmssSSS</li>
 	 * <li>yyyyMMdd</li>
@@ -943,8 +973,14 @@ public class DateUtil extends CalendarUtil {
 					// yyyy-MM-dd HH:mm
 					return parse(dateStr, DatePattern.NORM_DATETIME_MINUTE_FORMAT);
 				case 2:
-					if (StrUtil.contains(dateStr, CharUtil.DOT)) {
-						// yyyy-MM-dd HH:mm:ss.SSS
+					final int indexOfDot = StrUtil.indexOf(dateStr, CharUtil.DOT);
+					if (indexOfDot > 0) {
+						final int length1 = dateStr.length();
+						// yyyy-MM-dd HH:mm:ss.SSS 或者 yyyy-MM-dd HH:mm:ss.SSSSSS
+						if (length1 - indexOfDot > 4) {
+							// 类似yyyy-MM-dd HH:mm:ss.SSSSSS，采取截断操作
+							dateStr = StrUtil.subPre(dateStr, indexOfDot + 4);
+						}
 						return parse(dateStr, DatePattern.NORM_DATETIME_MS_FORMAT);
 					}
 					// yyyy-MM-dd HH:mm:ss
@@ -1412,7 +1448,7 @@ public class DateUtil extends CalendarUtil {
 	}
 
 	/**
-	 * 计算指定指定时间区间内的周数
+	 * 计算指定时间区间内的周数
 	 *
 	 * @param beginDate 开始时间
 	 * @param endDate   结束时间
@@ -1630,7 +1666,7 @@ public class DateUtil extends CalendarUtil {
 	 * stopWatch.stop();
 	 *
 	 * // 任务2
-	 * stopWatch.start("任务一");
+	 * stopWatch.start("任务二");
 	 * Thread.sleep(2000);
 	 * stopWatch.stop();
 	 *
@@ -1660,7 +1696,7 @@ public class DateUtil extends CalendarUtil {
 	 * stopWatch.stop();
 	 *
 	 * // 任务2
-	 * stopWatch.start("任务一");
+	 * stopWatch.start("任务二");
 	 * Thread.sleep(2000);
 	 * stopWatch.stop();
 	 *
@@ -1839,6 +1875,20 @@ public class DateUtil extends CalendarUtil {
 	 */
 	public static List<DateTime> rangeToList(Date start, Date end, final DateField unit) {
 		return CollUtil.newArrayList((Iterable<DateTime>) range(start, end, unit));
+	}
+
+	/**
+	 * 创建日期范围生成器
+	 *
+	 * @param start 起始日期时间
+	 * @param end   结束日期时间
+	 * @param unit  步进单位
+	 * @param step  步进
+	 * @return {@link DateRange}
+	 * @since 5.7.16
+	 */
+	public static List<DateTime> rangeToList(Date start, Date end, final DateField unit, int step) {
+		return CollUtil.newArrayList((Iterable<DateTime>) new DateRange(start, end, unit, step));
 	}
 
 	/**
@@ -2021,6 +2071,32 @@ public class DateUtil extends CalendarUtil {
 		}
 		format.setLenient(false);
 		return format;
+	}
+
+	/**
+	 * 获取时长单位简写
+	 *
+	 * @param unit 单位
+	 * @return 单位简写名称
+	 * @since 5.7.16
+	 */
+	public static String getShotName(TimeUnit unit) {
+		switch (unit) {
+			case NANOSECONDS:
+				return "ns";
+			case MICROSECONDS:
+				return "μs";
+			case MILLISECONDS:
+				return "ms";
+			case SECONDS:
+				return "s";
+			case MINUTES:
+				return "min";
+			case HOURS:
+				return "h";
+			default:
+				return unit.name().toLowerCase();
+		}
 	}
 
 	// ------------------------------------------------------------------------ Private method start

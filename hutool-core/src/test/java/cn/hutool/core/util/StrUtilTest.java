@@ -27,6 +27,24 @@ public class StrUtilTest {
 	}
 
 	@Test
+	public void trimNewLineTest() {
+		String str = "\r\naaa";
+		Assert.assertEquals("aaa", StrUtil.trim(str));
+		str = "\raaa";
+		Assert.assertEquals("aaa", StrUtil.trim(str));
+		str = "\naaa";
+		Assert.assertEquals("aaa", StrUtil.trim(str));
+		str = "\r\n\r\naaa";
+		Assert.assertEquals("aaa", StrUtil.trim(str));
+	}
+
+	@Test
+	public void trimTabTest() {
+		String str = "\taaa";
+		Assert.assertEquals("aaa", StrUtil.trim(str));
+	}
+
+	@Test
 	public void cleanBlankTest() {
 		// 包含：制表符、英文空格、不间断空白符、全角空格
 		String str = "	 你 好　";
@@ -61,6 +79,16 @@ public class StrUtilTest {
 		Assert.assertEquals(3, split.size());
 		Assert.assertEquals("b", split.get(1));
 		Assert.assertEquals("", split.get(2));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void splitNullTest() {
+		StrUtil.split(null, '.');
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void splitToArrayNullTest() {
+		StrUtil.splitToArray(null, '.');
 	}
 
 	@Test
@@ -532,7 +560,7 @@ public class StrUtilTest {
 	}
 
 	@Test
-	public void startWithTest(){
+	public void startWithTest() {
 		String a = "123";
 		String b = "123";
 
@@ -559,13 +587,13 @@ public class StrUtilTest {
 
 
 	@Test
-	public void isCharEqualsTest(){
+	public void isCharEqualsTest() {
 		String a = "aaaaaaaaa";
 		Assert.assertTrue(StrUtil.isCharEquals(a));
 	}
 
 	@Test
-	public void isNumericTest(){
+	public void isNumericTest() {
 		String a = "2142342422423423";
 		Assert.assertTrue(StrUtil.isNumeric(a));
 	}

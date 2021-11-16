@@ -11,12 +11,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
 import java.security.SecureRandom;
 
 public class AESTest {
 
 	@Test
-	public void encryptTest() {
+	public void encryptCBCTest() {
 		// 构建
 		AES aes = new AES(Mode.CBC, Padding.PKCS5Padding,
 				"1234567890123456".getBytes(), "1234567890123456".getBytes());
@@ -25,7 +26,7 @@ public class AESTest {
 	}
 
 	@Test
-	public void encryptTest2() {
+	public void encryptCTSTest() {
 		String content = "test中文";
 		AES aes = new AES(Mode.CTS, Padding.PKCS5Padding,
 				"0CoJUm6Qyw8W8jue".getBytes(), "0102030405060708".getBytes());
@@ -111,5 +112,25 @@ public class AESTest {
 
 		final String decryptStr = aes.decryptStr(result1);
 		Assert.assertEquals(content, decryptStr);
+	}
+
+	/**
+	 * 见：https://blog.csdn.net/weixin_42468911/article/details/114358682
+	 */
+	@Test
+	public void gcmTest() {
+		final SecretKey key = KeyUtil.generateKey("AES");
+		byte[] iv = RandomUtil.randomBytes(12);
+
+		AES aes = new AES("GCM", "NoPadding",
+				key,
+				new GCMParameterSpec(128, iv));
+
+		// 原始数据
+		String phone = "13534534567";
+		// 加密
+		byte[] encrypt = aes.encrypt(phone);
+		final String decryptStr = aes.decryptStr(encrypt);
+		Assert.assertEquals(phone, decryptStr);
 	}
 }

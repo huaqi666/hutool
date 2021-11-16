@@ -7,11 +7,13 @@ import cn.hutool.core.date.format.GlobalCustomFormat;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.SystemPropsUtil;
 
 import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -167,7 +169,7 @@ public class DateTime extends Date {
 	 * @since 5.0.5
 	 */
 	public DateTime(Instant instant, ZoneId zoneId) {
-		this(instant.toEpochMilli(), TimeZone.getTimeZone(ObjectUtil.defaultIfNull(zoneId, ZoneId.systemDefault())));
+		this(instant.toEpochMilli(), ZoneUtil.toTimeZone(zoneId));
 	}
 
 	/**
@@ -177,7 +179,7 @@ public class DateTime extends Date {
 	 * @since 5.0.0
 	 */
 	public DateTime(TemporalAccessor temporalAccessor) {
-		this(DateUtil.toInstant(temporalAccessor));
+		this(TemporalAccessorUtil.toInstant(temporalAccessor));
 	}
 
 	/**
@@ -276,7 +278,7 @@ public class DateTime extends Date {
 	 * @since 5.0.0
 	 */
 	public DateTime(CharSequence dateStr, DateTimeFormatter formatter) {
-		this(Instant.from(formatter.parse(dateStr)), formatter.getZone());
+		this(TemporalAccessorUtil.toInstant(formatter.parse(dateStr)), formatter.getZone());
 	}
 
 	/**
@@ -287,7 +289,19 @@ public class DateTime extends Date {
 	 * @see DatePattern
 	 */
 	public DateTime(CharSequence dateStr, DateParser dateParser) {
-		this(parse(dateStr, dateParser), dateParser.getTimeZone());
+		this(dateStr, dateParser, SystemPropsUtil.getBoolean(SystemPropsUtil.HUTOOL_DATE_LENIENT, true));
+	}
+
+	/**
+	 * 构造
+	 *
+	 * @param dateStr    Date字符串
+	 * @param dateParser 格式化器 {@link DateParser}，可以使用 {@link FastDateFormat}
+	 * @param lenient    是否宽容模式
+	 * @see DatePattern
+	 */
+	public DateTime(CharSequence dateStr, DateParser dateParser, boolean lenient) {
+		this(parse(dateStr, dateParser, lenient));
 	}
 
 	// -------------------------------------------------------------------- Constructor end
@@ -690,6 +704,16 @@ public class DateTime extends Date {
 	}
 
 	/**
+	 * 转换为 {@link LocalDateTime}
+	 *
+	 * @return {@link LocalDateTime}
+	 * @since 5.7.16
+	 */
+	public LocalDateTime toLocalDateTime() {
+		return LocalDateTimeUtil.of(this);
+	}
+
+	/**
 	 * 计算相差时长
 	 *
 	 * @param date 对比的日期
@@ -1017,16 +1041,21 @@ public class DateTime extends Date {
 	 *
 	 * @param dateStr 日期字符串
 	 * @param parser  {@link FastDateFormat}
-	 * @return {@link Date}
+	 * @param lenient 是否宽容模式
+	 * @return {@link Calendar}
 	 */
-	private static Date parse(CharSequence dateStr, DateParser parser) {
+	private static Calendar parse(CharSequence dateStr, DateParser parser, boolean lenient) {
 		Assert.notNull(parser, "Parser or DateFromat must be not null !");
 		Assert.notBlank(dateStr, "Date String must be not blank !");
-		try {
-			return parser.parse(dateStr.toString());
-		} catch (Exception e) {
-			throw new DateException("Parse [{}] with format [{}] error!", dateStr, parser.getPattern(), e);
+
+		final Calendar calendar = CalendarUtil.parse(dateStr, lenient, parser);
+		if (null == calendar) {
+			throw new DateException("Parse [{}] with format [{}] error!", dateStr, parser.getPattern());
 		}
+
+		//noinspection MagicConstant
+		calendar.setFirstDayOfWeek(Week.MONDAY.getValue());
+		return calendar;
 	}
 
 	/**

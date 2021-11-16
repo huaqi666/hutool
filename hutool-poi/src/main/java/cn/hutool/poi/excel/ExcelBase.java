@@ -5,13 +5,16 @@ import cn.hutool.core.lang.Assert;
 import cn.hutool.poi.excel.cell.CellLocation;
 import cn.hutool.poi.excel.cell.CellUtil;
 import cn.hutool.poi.excel.style.StyleUtil;
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -107,6 +110,21 @@ public class ExcelBase<T extends ExcelBase<T>> implements Closeable {
 		return this.sheet;
 	}
 
+
+	/**
+	 * 重命名当前sheet
+	 *
+	 * @param newName 新名字
+	 * @return this
+	 * @see Workbook#setSheetName(int, String)
+	 * @since 5.7.10
+	 */
+	@SuppressWarnings("unchecked")
+	public T renameSheet(String newName) {
+		this.workbook.setSheetName(this.workbook.getSheetIndex(this.sheet), newName);
+		return (T) this;
+	}
+
 	/**
 	 * 自定义需要读取或写出的Sheet，如果给定的sheet不存在，创建之。<br>
 	 * 在读取中，此方法用于切换读取的sheet，在写出时，此方法用于新建或者切换sheet。
@@ -141,6 +159,31 @@ public class ExcelBase<T extends ExcelBase<T>> implements Closeable {
 	@SuppressWarnings("unchecked")
 	public T setSheet(Sheet sheet) {
 		this.sheet = sheet;
+		return (T) this;
+	}
+
+	/**
+	 * 复制当前sheet为新sheet
+	 *
+	 * @param sheetIndex        sheet位置
+	 * @param newSheetName      新sheet名
+	 * @param setAsCurrentSheet 是否切换为当前sheet
+	 * @return this
+	 * @since 5.7.10
+	 */
+	@SuppressWarnings("unchecked")
+	public T cloneSheet(int sheetIndex, String newSheetName, boolean setAsCurrentSheet) {
+		Sheet sheet;
+		if (this.workbook instanceof XSSFWorkbook) {
+			XSSFWorkbook workbook = (XSSFWorkbook) this.workbook;
+			sheet = workbook.cloneSheet(sheetIndex, newSheetName);
+		} else {
+			sheet = this.workbook.cloneSheet(sheetIndex);
+			this.workbook.setSheetName(sheetIndex, newSheetName);
+		}
+		if (setAsCurrentSheet) {
+			this.sheet = sheet;
+		}
 		return (T) this;
 	}
 
@@ -281,7 +324,7 @@ public class ExcelBase<T extends ExcelBase<T>> implements Closeable {
 	 */
 	public CellStyle createCellStyle(int x, int y) {
 		final Cell cell = getOrCreateCell(x, y);
-			final CellStyle cellStyle = this.workbook.createCellStyle();
+		final CellStyle cellStyle = this.workbook.createCellStyle();
 		cell.setCellStyle(cellStyle);
 		return cellStyle;
 	}
@@ -293,7 +336,7 @@ public class ExcelBase<T extends ExcelBase<T>> implements Closeable {
 	 * @see Workbook#createCellStyle()
 	 * @since 5.4.0
 	 */
-	public CellStyle createCellStyle(){
+	public CellStyle createCellStyle() {
 		return StyleUtil.createCellStyle(this.workbook);
 	}
 
@@ -347,6 +390,32 @@ public class ExcelBase<T extends ExcelBase<T>> implements Closeable {
 		final CellStyle columnStyle = this.workbook.createCellStyle();
 		this.sheet.setDefaultColumnStyle(x, columnStyle);
 		return columnStyle;
+	}
+
+	/**
+	 * 创建 {@link Hyperlink}，默认内容（标签为链接地址本身）
+	 * @param type 链接类型
+	 * @param address 链接地址
+	 * @return 链接
+	 * @since 5.7.13
+	 */
+	public Hyperlink createHyperlink(HyperlinkType type, String address){
+		return createHyperlink(type, address, address);
+	}
+
+	/**
+	 * 创建 {@link Hyperlink}，默认内容
+	 * @param type 链接类型
+	 * @param address 链接地址
+	 * @param label 标签，即单元格中显示的内容
+	 * @return 链接
+	 * @since 5.7.13
+	 */
+	public Hyperlink createHyperlink(HyperlinkType type, String address, String label){
+		final Hyperlink hyperlink = this.workbook.getCreationHelper().createHyperlink(type);
+		hyperlink.setAddress(address);
+		hyperlink.setLabel(label);
+		return hyperlink;
 	}
 
 	/**

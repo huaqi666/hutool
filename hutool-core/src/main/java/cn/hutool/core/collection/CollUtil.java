@@ -53,6 +53,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * 集合相关工具类
@@ -84,13 +85,13 @@ public class CollUtil {
 	 * 如果提供的集合为{@code null}，返回一个不可变的默认空集合，否则返回原集合<br>
 	 * 空集合使用{@link Collections#emptyList()}
 	 *
-	 * @param <T> 集合元素类型
-	 * @param set 提供的集合，可能为null
+	 * @param <T>  集合元素类型
+	 * @param list 提供的集合，可能为null
 	 * @return 原集合，若为null返回空集合
 	 * @since 4.6.3
 	 */
-	public static <T> List<T> emptyIfNull(List<T> set) {
-		return (null == set) ? Collections.emptyList() : set;
+	public static <T> List<T> emptyIfNull(List<T> list) {
+		return (null == list) ? Collections.emptyList() : list;
 	}
 
 	/**
@@ -366,7 +367,7 @@ public class CollUtil {
 	 */
 	public static <T> Collection<T> subtract(Collection<T> coll1, Collection<T> coll2) {
 		Collection<T> result = ObjectUtil.clone(coll1);
-		if(null == result){
+		if (null == result) {
 			result = CollUtil.create(coll1.getClass());
 			result.addAll(coll1);
 		}
@@ -413,11 +414,32 @@ public class CollUtil {
 	 * @param collection 集合
 	 * @param value      需要查找的值
 	 * @return 如果集合为空（null或者空），返回{@code false}，否则找到元素返回{@code true}
+	 * @throws ClassCastException   如果类型不一致会抛出转换异常
+	 * @throws NullPointerException 当指定的元素 值为 null ,或集合类不支持null 时抛出该异常
+	 * @see Collection#contains(Object)
 	 * @since 4.1.10
 	 */
 	public static boolean contains(Collection<?> collection, Object value) {
 		return isNotEmpty(collection) && collection.contains(value);
 	}
+
+	/**
+	 * 判断指定集合是否包含指定值，如果集合为空（null或者空），返回{@code false}，否则找到元素返回{@code true}
+	 *
+	 * @param collection 集合
+	 * @param value      需要查找的值
+	 * @return 果集合为空（null或者空），返回{@code false}，否则找到元素返回{@code true}
+	 * @since 5.7.16
+	 */
+	public static boolean safeContains(Collection<?> collection, Object value) {
+
+		try {
+			return contains(collection, value);
+		} catch (ClassCastException | NullPointerException e) {
+			return false;
+		}
+	}
+
 
 	/**
 	 * 自定义函数判断集合是否包含某类值
@@ -1001,7 +1023,7 @@ public class CollUtil {
 			} catch (Exception e) {
 				// 无法创建当前类型的对象，尝试创建父类型对象
 				final Class<?> superclass = collectionType.getSuperclass();
-				if(null != superclass && collectionType != superclass){
+				if (null != superclass && collectionType != superclass) {
 					return create(superclass);
 				}
 				throw new UtilException(e);
@@ -1028,20 +1050,21 @@ public class CollUtil {
 	}
 
 	/**
-	 * 截取集合的部分
+	 * 截取列表的部分
 	 *
 	 * @param <T>   集合元素类型
 	 * @param list  被截取的数组
 	 * @param start 开始位置（包含）
 	 * @param end   结束位置（不包含）
 	 * @return 截取后的数组，当开始位置超过最大时，返回空的List
+	 * @see ListUtil#sub(List, int, int)
 	 */
 	public static <T> List<T> sub(List<T> list, int start, int end) {
 		return ListUtil.sub(list, start, end);
 	}
 
 	/**
-	 * 截取集合的部分
+	 * 截取列表的部分
 	 *
 	 * @param <T>   集合元素类型
 	 * @param list  被截取的数组
@@ -1049,6 +1072,7 @@ public class CollUtil {
 	 * @param end   结束位置（不包含）
 	 * @param step  步进
 	 * @return 截取后的数组，当开始位置超过最大时，返回空的List
+	 * @see ListUtil#sub(List, int, int, int)
 	 * @since 4.0.6
 	 */
 	public static <T> List<T> sub(List<T> list, int start, int end, int step) {
@@ -1071,20 +1095,21 @@ public class CollUtil {
 	/**
 	 * 截取集合的部分
 	 *
-	 * @param <T>   集合元素类型
-	 * @param list  被截取的数组
-	 * @param start 开始位置（包含）
-	 * @param end   结束位置（不包含）
-	 * @param step  步进
+	 * @param <T>        集合元素类型
+	 * @param collection 被截取的数组
+	 * @param start      开始位置（包含）
+	 * @param end        结束位置（不包含）
+	 * @param step       步进
 	 * @return 截取后的数组，当开始位置超过最大时，返回空集合
 	 * @since 4.0.6
 	 */
-	public static <T> List<T> sub(Collection<T> list, int start, int end, int step) {
-		if (list == null || list.isEmpty()) {
+	public static <T> List<T> sub(Collection<T> collection, int start, int end, int step) {
+		if (isEmpty(collection)) {
 			return ListUtil.empty();
 		}
 
-		return sub(new ArrayList<>(list), start, end, step);
+		final List<T> list = collection instanceof List ? (List<T>) collection : ListUtil.toList(collection);
+		return sub(list, start, end, step);
 	}
 
 	/**
@@ -1099,9 +1124,11 @@ public class CollUtil {
 	 * @param size 每个段的长度
 	 * @return 分段列表
 	 * @since 5.4.5
+	 * @deprecated 请使用 {@link ListUtil#partition(List, int)}
 	 */
+	@Deprecated
 	public static <T> List<List<T>> splitList(List<T> list, int size) {
-		return ListUtil.split(list, size);
+		return ListUtil.partition(list, size);
 	}
 
 	/**
@@ -1150,7 +1177,7 @@ public class CollUtil {
 		}
 
 		Collection<T> collection2 = ObjectUtil.clone(collection);
-		if(null == collection2){
+		if (null == collection2) {
 			// 不支持clone
 			collection2 = create(collection.getClass());
 		}
@@ -1189,7 +1216,7 @@ public class CollUtil {
 	 * @since 3.1.0
 	 */
 	public static <T> Collection<T> filterNew(Collection<T> collection, Filter<T> filter) {
-		if(null == collection || null == filter){
+		if (null == collection || null == filter) {
 			return collection;
 		}
 		return edit(collection, t -> filter.accept(t) ? t : null);
@@ -1568,6 +1595,20 @@ public class CollUtil {
 	 */
 	public static <T extends Collection<E>, E> T defaultIfEmpty(T collection, T defaultCollection) {
 		return isEmpty(collection) ? defaultCollection : collection;
+	}
+
+	/**
+	 * 如果给定集合为空，返回默认集合
+	 *
+	 * @param <T>        集合类型
+	 * @param <E>        集合元素类型
+	 * @param collection 集合
+	 * @param supplier   默认值懒加载函数
+	 * @return 非空（empty）的原集合或默认集合
+	 * @since 5.7.15
+	 */
+	public static <T extends Collection<E>, E> T defaultIfEmpty(T collection, Supplier<? extends T> supplier) {
+		return isEmpty(collection) ? supplier.get() : collection;
 	}
 
 	/**
@@ -2943,6 +2984,9 @@ public class CollUtil {
 	 * @since 5.6.0
 	 */
 	public static boolean isEqualList(final Collection<?> list1, final Collection<?> list2) {
+		if (list1 == list2) {
+			return true;
+		}
 		if (list1 == null || list2 == null || list1.size() != list2.size()) {
 			return false;
 		}

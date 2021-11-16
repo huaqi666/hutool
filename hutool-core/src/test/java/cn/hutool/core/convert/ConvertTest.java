@@ -4,6 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateException;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.TypeReference;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ByteUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,10 +13,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -143,7 +147,7 @@ public class ConvertTest {
 	public void toNumberTest() {
 		Object a = "12.45";
 		Number number = Convert.toNumber(a);
-		Assert.assertEquals(12.45D, number);
+		Assert.assertEquals(12.45D, number.doubleValue(), 2);
 	}
 
 	@Test
@@ -316,5 +320,27 @@ public class ConvertTest {
 	public void toSqlDateTest(){
 		final java.sql.Date date = Convert.convert(java.sql.Date.class, DateUtil.parse("2021-07-28"));
 		Assert.assertEquals("2021-07-28", date.toString());
+	}
+
+	@Test
+	public void toHashtableTest(){
+		Map<String, String> map = MapUtil.newHashMap();
+		map.put("a1", "v1");
+		map.put("a2", "v2");
+		map.put("a3", "v3");
+
+		@SuppressWarnings("unchecked")
+		final Hashtable<String, String> hashtable = Convert.convert(Hashtable.class, map);
+		Assert.assertEquals("v1", hashtable.get("a1"));
+		Assert.assertEquals("v2", hashtable.get("a2"));
+		Assert.assertEquals("v3", hashtable.get("a3"));
+	}
+
+	@Test
+	public void toBigDecimalTest(){
+		// https://github.com/dromara/hutool/issues/1818
+		String str = "33020000210909112800000124";
+		final BigDecimal bigDecimal = Convert.toBigDecimal(str);
+		Assert.assertEquals(str, bigDecimal.toPlainString());
 	}
 }

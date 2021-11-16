@@ -12,7 +12,7 @@ public class JSONConfig implements Serializable {
 	private static final long serialVersionUID = 119730355204738278L;
 
 	/**
-	 * 是否有序，顺序按照加入顺序排序
+	 * 是否有序，顺序按照加入顺序排序，只针对JSONObject有效
 	 */
 	private boolean order;
 	/**
@@ -51,7 +51,7 @@ public class JSONConfig implements Serializable {
 	}
 
 	/**
-	 * 是否有序，顺序按照加入顺序排序
+	 * 是否有序，顺序按照加入顺序排序，只针对JSONObject有效
 	 *
 	 * @return 是否有序
 	 */
@@ -60,7 +60,7 @@ public class JSONConfig implements Serializable {
 	}
 
 	/**
-	 * 设置是否有序，顺序按照加入顺序排序
+	 * 设置是否有序，顺序按照加入顺序排序，只针对JSONObject有效
 	 *
 	 * @param order 是否有序
 	 * @return this
@@ -175,6 +175,7 @@ public class JSONConfig implements Serializable {
 
 	/**
 	 * 是否去除末尾多余0，例如如果为true,5.0返回5
+	 *
 	 * @return 是否去除末尾多余0，例如如果为true,5.0返回5
 	 * @since 5.6.2
 	 */
@@ -184,6 +185,7 @@ public class JSONConfig implements Serializable {
 
 	/**
 	 * 设置是否去除末尾多余0，例如如果为true,5.0返回5
+	 *
 	 * @param stripTrailingZeros 是否去除末尾多余0，例如如果为true,5.0返回5
 	 * @return this
 	 * @since 5.6.2

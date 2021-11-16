@@ -1,5 +1,6 @@
 package cn.hutool.core.net;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.PatternPool;
 import cn.hutool.core.util.ReUtil;
 import org.junit.Assert;
@@ -13,7 +14,7 @@ import java.util.List;
 
 /**
  * NetUtil单元测试
- * 
+ *
  * @author Looly
  *
  */
@@ -91,6 +92,24 @@ public class NetUtilTest {
 	public void isOpenTest(){
 		InetSocketAddress address = new InetSocketAddress("www.hutool.cn", 443);
 		Assert.assertTrue(NetUtil.isOpen(address, 200));
+	}
+
+	@Test
+	@Ignore
+	public void getDnsInfoTest(){
+		final List<String> txt = NetUtil.getDnsInfo("hutool.cn", "TXT");
+		Console.log(txt);
+	}
+
+	@Test
+	public void isInRangeTest(){
+		Assert.assertTrue(NetUtil.isInRange("114.114.114.114","0.0.0.0/0"));
+		Assert.assertTrue(NetUtil.isInRange("192.168.3.4","192.0.0.0/8"));
+		Assert.assertTrue(NetUtil.isInRange("192.168.3.4","192.168.0.0/16"));
+		Assert.assertTrue(NetUtil.isInRange("192.168.3.4","192.168.3.0/24"));
+		Assert.assertTrue(NetUtil.isInRange("192.168.3.4","192.168.3.4/32"));
+		Assert.assertFalse(NetUtil.isInRange("8.8.8.8","192.0.0.0/8"));
+		Assert.assertFalse(NetUtil.isInRange("114.114.114.114","192.168.3.4/32"));
 	}
 
 }

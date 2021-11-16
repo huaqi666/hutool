@@ -4,6 +4,7 @@ import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.CipherMode;
 import cn.hutool.crypto.KeyUtil;
 import cn.hutool.crypto.Mode;
 import cn.hutool.crypto.Padding;
@@ -14,11 +15,11 @@ import cn.hutool.crypto.symmetric.DESede;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
 import cn.hutool.crypto.symmetric.Vigenere;
-import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * 对称加密算法单元测试
@@ -110,12 +111,27 @@ public class SymmetricTest {
 	}
 
 	@Test
+	public void pbeWithoutIvTest() {
+		String content = "4321c9a2db2e6b08987c3b903d8d11ff";
+		SymmetricCrypto crypto = new SymmetricCrypto(SymmetricAlgorithm.PBEWithMD5AndDES,
+				"0123456789ABHAEQ".getBytes());
+
+		// 加密为16进制表示
+		String encryptHex = crypto.encryptHex(content);
+		final String data = crypto.decryptStr(encryptHex);
+
+		Assert.assertEquals(content, data);
+	}
+
+	@Test
 	public void aesUpdateTest() {
 		String content = "4321c9a2db2e6b08987c3b903d8d11ff";
 		AES aes = new AES(Mode.CBC, Padding.PKCS5Padding, "0123456789ABHAEQ".getBytes(), "DYgjCEIMVrj2W9xN".getBytes());
 
 		// 加密为16进制表示
+		aes.setMode(CipherMode.encrypt);
 		String randomData = aes.updateHex(content.getBytes(StandardCharsets.UTF_8));
+		aes.setMode(CipherMode.encrypt);
 		String randomData2 = aes.updateHex(content.getBytes(StandardCharsets.UTF_8));
 		Assert.assertEquals(randomData2, randomData);
 		Assert.assertEquals(randomData, "cd0e3a249eaf0ed80c330338508898c4");
@@ -152,7 +168,7 @@ public class SymmetricTest {
 	public void aesPkcs7PaddingTest() {
 		String content = RandomUtil.randomString(RandomUtil.randomInt(200));
 		AES aes = new AES("CBC", "PKCS7Padding",
-				"0123456789ABHAEQ".getBytes(),
+				RandomUtil.randomBytes(32),
 				"DYgjCEIMVrj2W9xN".getBytes());
 
 		// 加密为16进制表示

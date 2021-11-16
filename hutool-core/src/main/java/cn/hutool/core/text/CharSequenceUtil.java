@@ -18,11 +18,13 @@ import cn.hutool.core.util.StrUtil;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -315,10 +317,10 @@ public class CharSequenceUtil {
 	 * 如果字符串是{@code null}或者&quot;&quot;或者空白，则返回指定默认字符串，否则返回字符串本身。
 	 *
 	 * <pre>
-	 * emptyToDefault(null, &quot;default&quot;)  = &quot;default&quot;
-	 * emptyToDefault(&quot;&quot;, &quot;default&quot;)    = &quot;default&quot;
-	 * emptyToDefault(&quot;  &quot;, &quot;default&quot;)  = &quot;default&quot;
-	 * emptyToDefault(&quot;bat&quot;, &quot;default&quot;) = &quot;bat&quot;
+	 * blankToDefault(null, &quot;default&quot;)  = &quot;default&quot;
+	 * blankToDefault(&quot;&quot;, &quot;default&quot;)    = &quot;default&quot;
+	 * blankToDefault(&quot;  &quot;, &quot;default&quot;)  = &quot;default&quot;
+	 * blankToDefault(&quot;bat&quot;, &quot;default&quot;) = &quot;bat&quot;
 	 * </pre>
 	 *
 	 * @param str        要转换的字符串
@@ -1728,16 +1730,14 @@ public class CharSequenceUtil {
 	/**
 	 * 切分字符串
 	 *
-	 * @param str       被切分的字符串
+	 * @param text      被切分的字符串
 	 * @param separator 分隔符字符
 	 * @param limit     限制分片数
 	 * @return 切分后的数组
 	 */
-	public static String[] splitToArray(CharSequence str, char separator, int limit) {
-		if (null == str) {
-			return new String[]{};
-		}
-		return StrSplitter.splitToArray(str.toString(), separator, limit, false, false);
+	public static String[] splitToArray(CharSequence text, char separator, int limit) {
+		Assert.notNull(text, "Text must be not null!");
+		return StrSplitter.splitToArray(text.toString(), separator, limit, false, false);
 	}
 
 	/**
@@ -1828,10 +1828,26 @@ public class CharSequenceUtil {
 	 * @since 3.0.8
 	 */
 	public static List<String> split(CharSequence str, char separator, int limit, boolean isTrim, boolean ignoreEmpty) {
+		return StrSplitter.split(str, separator, limit, isTrim, ignoreEmpty);
+	}
+
+	/**
+	 * 切分字符串
+	 *
+	 * @param <R>         切分后元素类型
+	 * @param str         被切分的字符串
+	 * @param separator   分隔符字符
+	 * @param limit       限制分片数，-1不限制
+	 * @param ignoreEmpty 是否忽略空串
+	 * @param mapping     切分后的字符串元素的转换方法
+	 * @return 切分后的集合，元素类型是经过 mapping 转换后的
+	 * @since 5.7.14
+	 */
+	public static <R> List<R> split(CharSequence str, char separator, int limit, boolean ignoreEmpty, Function<String, R> mapping) {
 		if (null == str) {
 			return new ArrayList<>(0);
 		}
-		return StrSplitter.split(str.toString(), separator, limit, isTrim, ignoreEmpty);
+		return StrSplitter.split(str.toString(), separator, limit, ignoreEmpty, mapping);
 	}
 
 	/**
@@ -2841,10 +2857,10 @@ public class CharSequenceUtil {
 			len += str.length();
 		}
 		if (isNotEmpty(prefix)) {
-			len += str.length();
+			len += prefix.length();
 		}
 		if (isNotEmpty(suffix)) {
-			len += str.length();
+			len += suffix.length();
 		}
 		StringBuilder sb = new StringBuilder(len);
 		if (isNotEmpty(prefix) && false == startWith(str, prefix)) {
@@ -3608,7 +3624,7 @@ public class CharSequenceUtil {
 	 * replaceFun可以通过{@link Matcher}提取出匹配到的内容的不同部分，然后经过重新处理、组装变成新的内容放回原位。
 	 *
 	 * <pre class="code">
-	 *     replaceAll(this.content, "(\\d+)", parameters -&gt; "-" + parameters.group(1) + "-")
+	 *     replace(this.content, "(\\d+)", parameters -&gt; "-" + parameters.group(1) + "-")
 	 *     // 结果为："ZZZaaabbbccc中文-1234-"
 	 * </pre>
 	 *
@@ -3639,7 +3655,7 @@ public class CharSequenceUtil {
 
 	/**
 	 * 替换指定字符串的指定区间内字符为"*"
-	 * 俗称：脱敏功能，后面其他功能，可以见：DesensitizedUtils(脱敏工具类)
+	 * 俗称：脱敏功能，后面其他功能，可以见：DesensitizedUtil(脱敏工具类)
 	 *
 	 * <pre>
 	 * StrUtil.hide(null,*,*)=null
@@ -3665,15 +3681,15 @@ public class CharSequenceUtil {
 	 * 脱敏，使用默认的脱敏策略
 	 *
 	 * <pre>
-	 * StrUtil.desensitized("100", DesensitizedUtils.DesensitizedType.USER_ID)) =  "0"
-	 * StrUtil.desensitized("段正淳", DesensitizedUtils.DesensitizedType.CHINESE_NAME)) = "段**"
-	 * StrUtil.desensitized("51343620000320711X", DesensitizedUtils.DesensitizedType.ID_CARD)) = "5***************1X"
-	 * StrUtil.desensitized("09157518479", DesensitizedUtils.DesensitizedType.FIXED_PHONE)) = "0915*****79"
-	 * StrUtil.desensitized("18049531999", DesensitizedUtils.DesensitizedType.MOBILE_PHONE)) = "180****1999"
-	 * StrUtil.desensitized("北京市海淀区马连洼街道289号", DesensitizedUtils.DesensitizedType.ADDRESS)) = "北京市海淀区马********"
-	 * StrUtil.desensitized("duandazhi-jack@gmail.com.cn", DesensitizedUtils.DesensitizedType.EMAIL)) = "d*************@gmail.com.cn"
-	 * StrUtil.desensitized("1234567890", DesensitizedUtils.DesensitizedType.PASSWORD)) = "**********"
-	 * StrUtil.desensitized("苏D40000", DesensitizedUtils.DesensitizedType.CAR_LICENSE)) = "苏D4***0"
+	 * StrUtil.desensitized("100", DesensitizedUtil.DesensitizedType.USER_ID)) =  "0"
+	 * StrUtil.desensitized("段正淳", DesensitizedUtil.DesensitizedType.CHINESE_NAME)) = "段**"
+	 * StrUtil.desensitized("51343620000320711X", DesensitizedUtil.DesensitizedType.ID_CARD)) = "5***************1X"
+	 * StrUtil.desensitized("09157518479", DesensitizedUtil.DesensitizedType.FIXED_PHONE)) = "0915*****79"
+	 * StrUtil.desensitized("18049531999", DesensitizedUtil.DesensitizedType.MOBILE_PHONE)) = "180****1999"
+	 * StrUtil.desensitized("北京市海淀区马连洼街道289号", DesensitizedUtil.DesensitizedType.ADDRESS)) = "北京市海淀区马********"
+	 * StrUtil.desensitized("duandazhi-jack@gmail.com.cn", DesensitizedUtil.DesensitizedType.EMAIL)) = "d*************@gmail.com.cn"
+	 * StrUtil.desensitized("1234567890", DesensitizedUtil.DesensitizedType.PASSWORD)) = "**********"
+	 * StrUtil.desensitized("苏D40000", DesensitizedUtil.DesensitizedType.CAR_LICENSE)) = "苏D4***0"
 	 * StrUtil.desensitized("11011111222233333256", DesensitizedType.BANK_CARD)) = "1101 **** **** **** 3256"
 	 * </pre>
 	 *
@@ -4016,9 +4032,10 @@ public class CharSequenceUtil {
 	 *
 	 * @param str 转换前的驼峰式命名的字符串，也可以为下划线形式
 	 * @return 转换后下划线方式命名的字符串
+	 * @see NamingCase#toUnderlineCase(CharSequence)
 	 */
 	public static String toUnderlineCase(CharSequence str) {
-		return toSymbolCase(str, CharUtil.UNDERLINE);
+		return NamingCase.toUnderlineCase(str);
 	}
 
 	/**
@@ -4027,59 +4044,11 @@ public class CharSequenceUtil {
 	 * @param str    转换前的驼峰式命名的字符串，也可以为符号连接形式
 	 * @param symbol 连接符
 	 * @return 转换后符号连接方式命名的字符串
+	 * @see NamingCase#toSymbolCase(CharSequence, char)
 	 * @since 4.0.10
 	 */
 	public static String toSymbolCase(CharSequence str, char symbol) {
-		if (str == null) {
-			return null;
-		}
-
-		final int length = str.length();
-		final StrBuilder sb = new StrBuilder();
-		char c;
-		for (int i = 0; i < length; i++) {
-			c = str.charAt(i);
-			if (Character.isUpperCase(c)) {
-				final Character preChar = (i > 0) ? str.charAt(i - 1) : null;
-				final Character nextChar = (i < str.length() - 1) ? str.charAt(i + 1) : null;
-
-				if (null != preChar) {
-					if (symbol == preChar) {
-						// 前一个为分隔符
-						if (null == nextChar || Character.isLowerCase(nextChar)) {
-							//普通首字母大写，如_Abb -> _abb
-							c = Character.toLowerCase(c);
-						}
-						//后一个为大写，按照专有名词对待，如_AB -> _AB
-					} else if (Character.isLowerCase(preChar)) {
-						// 前一个为小写
-						sb.append(symbol);
-						if (null == nextChar || Character.isLowerCase(nextChar)) {
-							//普通首字母大写，如aBcc -> a_bcc
-							c = Character.toLowerCase(c);
-						}
-						// 后一个为大写，按照专有名词对待，如aBC -> a_BC
-					} else {
-						//前一个为大写
-						if (null == nextChar || Character.isLowerCase(nextChar)) {
-							// 普通首字母大写，如ABcc -> A_bcc
-							sb.append(symbol);
-							c = Character.toLowerCase(c);
-						}
-						// 后一个为大写，按照专有名词对待，如ABC -> ABC
-					}
-				} else {
-					// 首字母，需要根据后一个判断是否转为小写
-					if (null == nextChar || Character.isLowerCase(nextChar)) {
-						// 普通首字母大写，如Abc -> abc
-						c = Character.toLowerCase(c);
-					}
-					// 后一个为大写，按照专有名词对待，如ABC -> ABC
-				}
-			}
-			sb.append(c);
-		}
-		return sb.toString();
+		return NamingCase.toSymbolCase(str, symbol);
 	}
 
 	/**
@@ -4088,33 +4057,10 @@ public class CharSequenceUtil {
 	 *
 	 * @param name 转换前的下划线大写方式命名的字符串
 	 * @return 转换后的驼峰式命名的字符串
+	 * @see NamingCase#toCamelCase(CharSequence)
 	 */
 	public static String toCamelCase(CharSequence name) {
-		if (null == name) {
-			return null;
-		}
-
-		final String name2 = name.toString();
-		if (contains(name2, CharUtil.UNDERLINE)) {
-			final int length = name2.length();
-			final StringBuilder sb = new StringBuilder(length);
-			boolean upperCase = false;
-			for (int i = 0; i < length; i++) {
-				char c = name2.charAt(i);
-
-				if (c == CharUtil.UNDERLINE) {
-					upperCase = true;
-				} else if (upperCase) {
-					sb.append(Character.toUpperCase(c));
-					upperCase = false;
-				} else {
-					sb.append(Character.toLowerCase(c));
-				}
-			}
-			return sb.toString();
-		} else {
-			return name2;
-		}
+		return NamingCase.toCamelCase(name);
 	}
 
 	// ------------------------------------------------------------------------ isSurround
@@ -4273,7 +4219,7 @@ public class CharSequenceUtil {
 		}
 
 		// since 5.7.5，特殊长度
-		switch (maxLength){
+		switch (maxLength) {
 			case 1:
 				return String.valueOf(str.charAt(0));
 			case 2:
@@ -4304,7 +4250,7 @@ public class CharSequenceUtil {
 	/**
 	 * 以 conjunction 为分隔符将多个对象转换为字符串
 	 *
-	 * @param <T> 元素类型
+	 * @param <T>         元素类型
 	 * @param conjunction 分隔符 {@link StrPool#COMMA}
 	 * @param iterable    集合
 	 * @return 连接后的字符串
@@ -4327,7 +4273,7 @@ public class CharSequenceUtil {
 		if (StrUtil.isBlank(value)) {
 			return false;
 		}
-		for (int i = value.length(); --i >= 0;) {
+		for (int i = value.length(); --i >= 0; ) {
 			if (false == matcher.match(value.charAt(i))) {
 				return false;
 			}
@@ -4393,7 +4339,21 @@ public class CharSequenceUtil {
 	 * @return 给定字符串的所有字符是否都一样
 	 * @since 5.7.3
 	 */
-	public static boolean isCharEquals(String str) {
-		return isBlank(str.replace(str.charAt(0), CharUtil.SPACE));
+	public static boolean isCharEquals(CharSequence str) {
+		Assert.notEmpty(str, "Str to check must be not empty!");
+		return count(str, str.charAt(0)) == str.length();
+	}
+
+	/**
+	 * 对字符串归一化处理，如 "Á" 可以使用 "u00C1"或 "u0041u0301"表示，实际测试中两个字符串并不equals<br>
+	 * 因此使用此方法归一为一种表示形式，默认按照W3C通常建议的，在NFC中交换文本。
+	 *
+	 * @param str 归一化的字符串
+	 * @return 归一化后的字符串
+	 * @see Normalizer#normalize(CharSequence, Normalizer.Form)
+	 * @since 5.7.16
+	 */
+	public static String normalize(CharSequence str) {
+		return Normalizer.normalize(str, Normalizer.Form.NFC);
 	}
 }

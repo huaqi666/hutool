@@ -8,13 +8,16 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.poi.excel.cell.setters.EscapeStrCellSetter;
 import cn.hutool.poi.excel.style.StyleUtil;
+import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Hyperlink;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.util.CellRangeAddressList;
@@ -39,6 +42,20 @@ import java.util.TreeMap;
  * @author looly
  */
 public class ExcelWriteTest {
+
+	@Test
+	public void writeNoFlushTest(){
+		List<?> row1 = CollUtil.newArrayList("aaaaa", "bb", "cc", "dd", DateUtil.date(), 3.22676575765);
+		List<?> row2 = CollUtil.newArrayList("aa1", "bb1", "cc1", "dd1", DateUtil.date(), 250.7676);
+		List<?> row3 = CollUtil.newArrayList("aa2", "bb2", "cc2", "dd2", DateUtil.date(), 0.111);
+		List<?> row4 = CollUtil.newArrayList("aa3", "bb3", "cc3", "dd3", DateUtil.date(), 35);
+		List<?> row5 = CollUtil.newArrayList("aa4", "bb4", "cc4", "dd4", DateUtil.date(), 28.00);
+		List<List<?>> rows = CollUtil.newArrayList(row1, row2, row3, row4, row5);
+
+		final ExcelWriter writer = ExcelUtil.getWriter();
+		writer.write(rows);
+		writer.close();
+	}
 
 	@Test
 	@Ignore
@@ -707,6 +724,87 @@ public class ExcelWriteTest {
 		writer.merge(7, "测试标题");
 		writer.merge(3, 4, 0, 0, new XSSFRichTextString("9999"), true);
 		writer.write(list, true);
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void mergeForDateTest(){
+		// https://github.com/dromara/hutool/issues/1911
+
+		//通过工具类创建writer
+		String path = "d:/test/mergeForDate.xlsx";
+		FileUtil.del(path);
+		ExcelWriter writer = ExcelUtil.getWriter(path);
+		writer.merge(0, 3, 0, 2, DateUtil.date(), false);
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void changeHeaderStyleTest(){
+		final ExcelWriter writer = ExcelUtil.getWriter("d:/test/headerStyle.xlsx");
+		writer.writeHeadRow(ListUtil.of("姓名", "性别", "年龄"));
+		final CellStyle headCellStyle = writer.getStyleSet().getHeadCellStyle();
+		headCellStyle.setFillForegroundColor(IndexedColors.YELLOW1.index);
+		headCellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void writeFloatTest(){
+		//issue https://gitee.com/dromara/hutool/issues/I43U9G
+		String path = "d:/test/floatTest.xlsx";
+		FileUtil.del(path);
+
+		final ExcelWriter writer = ExcelUtil.getWriter(path);
+		writer.writeRow(ListUtil.of(22.9f));
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void issueI466ZZTest(){
+		// https://gitee.com/dromara/hutool/issues/I466ZZ
+		// 需要输出S_20000314_x5116_0004
+		// 此处加入一个转义前缀：_x005F
+		List<Object> row = ListUtil.of(new EscapeStrCellSetter("S_20000314_x5116_0004"));
+
+		ExcelWriter writer = ExcelUtil.getWriter("d:/test/_x.xlsx");
+		writer.writeRow(row);
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void writeLongTest(){
+		//https://gitee.com/dromara/hutool/issues/I49R6U
+		final ExcelWriter writer = ExcelUtil.getWriter("d:/test/long.xlsx");
+		writer.write(ListUtil.of(1427545395336093698L));
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void writeHyperlinkTest(){
+			final ExcelWriter writer = ExcelUtil.getWriter("d:/test/hyperlink.xlsx");
+
+		final Hyperlink hyperlink = writer.createHyperlink(HyperlinkType.URL, "https://hutool.cn");
+
+		writer.write(ListUtil.of(hyperlink));
+		writer.close();
+	}
+
+	@Test
+	@Ignore
+	public void mergeNumberTest(){
+		File tempFile=new File("d:/test/mergeNumber.xlsx");
+		FileUtil.del(tempFile);
+
+		BigExcelWriter writer= new BigExcelWriter(tempFile);
+		writer.merge(0,1,2,2,3.99,false);
 		writer.close();
 	}
 }

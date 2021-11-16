@@ -1,5 +1,6 @@
 package cn.hutool.core.collection;
 
+import cn.hutool.core.comparator.ComparableComparator;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.map.MapUtil;
@@ -712,6 +713,23 @@ public class CollUtilTest {
 	}
 
 	@Test
+	public void mapToMapTest(){
+		final HashMap<String, String> oldMap = new HashMap<>();
+		oldMap.put("a", "1");
+		oldMap.put("b", "12");
+		oldMap.put("c", "134");
+
+		final Map<String, Long> map = CollUtil.toMap(oldMap.entrySet(),
+				new HashMap<>(),
+				Map.Entry::getKey,
+				entry -> Long.parseLong(entry.getValue()));
+
+		Assert.assertEquals(1L, (long)map.get("a"));
+		Assert.assertEquals(12L, (long)map.get("b"));
+		Assert.assertEquals(134L, (long)map.get("c"));
+	}
+
+	@Test
 	public void countMapTest() {
 		ArrayList<String> list = CollUtil.newArrayList("a", "b", "c", "c", "a", "b", "d");
 		Map<String, Integer> countMap = CollUtil.countMap(list);
@@ -763,5 +781,12 @@ public class CollUtilTest {
 		List<Long> result = CollUtil.subtractToList(list1, list2);
 		Assert.assertEquals(1, result.size());
 		Assert.assertEquals(1L, result.get(0), 1);
+	}
+
+	@Test
+	public void sortComparableTest() {
+		final List<String> of = ListUtil.toList("a", "c", "b");
+		final List<String> sort = CollUtil.sort(of, new ComparableComparator<>());
+		Assert.assertEquals("a,b,c", CollUtil.join(sort, ","));
 	}
 }

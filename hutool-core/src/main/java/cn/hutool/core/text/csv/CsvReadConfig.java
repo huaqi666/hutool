@@ -8,7 +8,7 @@ import java.io.Serializable;
  * @author looly
  *
  */
-public class CsvReadConfig extends CsvConfig implements Serializable {
+public class CsvReadConfig extends CsvConfig<CsvReadConfig> implements Serializable {
 	private static final long serialVersionUID = 5396453565371560052L;
 
 	/** 是否首行做为标题行，默认false */
@@ -21,6 +21,8 @@ public class CsvReadConfig extends CsvConfig implements Serializable {
 	protected long beginLineNo;
 	/** 结束的行（包括），此处为原始文件行号 */
 	protected long endLineNo = Long.MAX_VALUE-1;
+	/** 每个字段是否去除两边空白符 */
+	protected boolean trimField;
 
 	/**
 	 * 默认配置
@@ -85,6 +87,19 @@ public class CsvReadConfig extends CsvConfig implements Serializable {
 	 */
 	public CsvReadConfig setEndLineNo(long endLineNo) {
 		this.endLineNo = endLineNo;
+		return this;
+	}
+
+	/**
+	 * 设置每个字段是否去除两边空白符<br>
+	 * 如果字段以{@link #textDelimiter}包围，则保留两边空格
+	 *
+	 * @param trimField 去除两边空白符
+	 * @return this
+	 * @since 5.7.13
+	 */
+	public CsvReadConfig setTrimField(boolean trimField) {
+		this.trimField = trimField;
 		return this;
 	}
 }

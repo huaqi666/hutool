@@ -4,18 +4,40 @@ import cn.hutool.core.date.StopWatch;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.PageUtil;
 import cn.hutool.core.util.RandomUtil;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ListUtilTest {
 
 	@Test
+	public void splitTest(){
+		List<List<Object>> lists = ListUtil.split(null, 3);
+		Assert.assertEquals(ListUtil.empty(), lists);
+
+		lists = ListUtil.split(Arrays.asList(1, 2, 3, 4), 1);
+		Assert.assertEquals("[[1], [2], [3], [4]]", lists.toString());
+		lists = ListUtil.split(Arrays.asList(1, 2, 3, 4), 2);
+		Assert.assertEquals("[[1, 2], [3, 4]]", lists.toString());
+		lists = ListUtil.split(Arrays.asList(1, 2, 3, 4), 3);
+		Assert.assertEquals("[[1, 2, 3], [4]]", lists.toString());
+		lists = ListUtil.split(Arrays.asList(1, 2, 3, 4), 4);
+		Assert.assertEquals("[[1, 2, 3, 4]]", lists.toString());
+		lists = ListUtil.split(Arrays.asList(1, 2, 3, 4), 5);
+		Assert.assertEquals("[[1, 2, 3, 4]]", lists.toString());
+	}
+
+	@Test
 	@Ignore
-	public void split() {
+	public void splitBenchTest() {
 		List<String> list = new ArrayList<>();
 		CollUtil.padRight(list, RandomUtil.randomInt(1000_0000, 1_0000_0000), "test");
 
@@ -35,6 +57,32 @@ public class ListUtilTest {
 		Assert.assertEquals(CollSplitResult, ListSplitResult);
 
 		Console.log(stopWatch.prettyPrint());
+	}
+
+	@Test
+	public void splitAvgTest(){
+		List<List<Object>> lists = ListUtil.splitAvg(null, 3);
+		Assert.assertEquals(ListUtil.empty(), lists);
+
+		lists = ListUtil.splitAvg(Arrays.asList(1, 2, 3, 4), 1);
+		Assert.assertEquals("[[1, 2, 3, 4]]", lists.toString());
+		lists = ListUtil.splitAvg(Arrays.asList(1, 2, 3, 4), 2);
+		Assert.assertEquals("[[1, 2], [3, 4]]", lists.toString());
+		lists = ListUtil.splitAvg(Arrays.asList(1, 2, 3, 4), 3);
+		Assert.assertEquals("[[1, 2], [3], [4]]", lists.toString());
+		lists = ListUtil.splitAvg(Arrays.asList(1, 2, 3, 4), 4);
+		Assert.assertEquals("[[1], [2], [3], [4]]", lists.toString());
+
+		lists = ListUtil.splitAvg(Arrays.asList(1, 2, 3), 5);
+		Assert.assertEquals("[[1], [2], [3], [], []]", lists.toString());
+		lists = ListUtil.splitAvg(Arrays.asList(1, 2, 3), 2);
+		Assert.assertEquals("[[1, 2], [3]]", lists.toString());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void splitAvgNotZero(){
+		// limit不能小于等于0
+		ListUtil.splitAvg(Arrays.asList(1, 2, 3, 4), 0);
 	}
 
 	@Test
@@ -100,6 +148,25 @@ public class ListUtilTest {
 		PageUtil.setFirstPageNo(1);
 		int[] d1 = ListUtil.page(0,8,a).stream().mapToInt(Integer::valueOf).toArray();
 		Assert.assertArrayEquals(new int[]{1,2,3,4,5},d1);
+
+		// page with consumer
+		List<List<Integer>> pageListData = new ArrayList<>();
+		ListUtil.page(a, 2, pageListData::add);
+		Assert.assertArrayEquals(new int[]{1, 2}, pageListData.get(0).stream().mapToInt(Integer::valueOf).toArray());
+		Assert.assertArrayEquals(new int[]{3, 4}, pageListData.get(1).stream().mapToInt(Integer::valueOf).toArray());
+		Assert.assertArrayEquals(new int[]{5}, pageListData.get(2).stream().mapToInt(Integer::valueOf).toArray());
+
+
+		pageListData.clear();
+		ListUtil.page(a, 2, pageList -> {
+			pageListData.add(pageList);
+			if (pageList.get(0).equals(1)) {
+				pageList.clear();
+			}
+		});
+		Assert.assertArrayEquals(new int[]{}, pageListData.get(0).stream().mapToInt(Integer::valueOf).toArray());
+		Assert.assertArrayEquals(new int[]{3, 4}, pageListData.get(1).stream().mapToInt(Integer::valueOf).toArray());
+		Assert.assertArrayEquals(new int[]{5}, pageListData.get(2).stream().mapToInt(Integer::valueOf).toArray());
 	}
 
 	@Test
@@ -111,5 +178,51 @@ public class ListUtilTest {
 		// 对子列表操作不影响原列表
 		Assert.assertEquals(4, of.size());
 		Assert.assertEquals(1, sub.size());
+	}
+
+	@Test
+	public void sortByPropertyTest(){
+		@Data
+		@AllArgsConstructor
+		class TestBean{
+			private int order;
+			private String name;
+		}
+
+		final List<TestBean> beanList = ListUtil.toList(
+				new TestBean(2, "test2"),
+				new TestBean(1, "test1"),
+				new TestBean(5, "test5"),
+				new TestBean(4, "test4"),
+				new TestBean(3, "test3")
+				);
+
+		final List<TestBean> order = ListUtil.sortByProperty(beanList, "order");
+		Assert.assertEquals("test1", order.get(0).getName());
+		Assert.assertEquals("test2", order.get(1).getName());
+		Assert.assertEquals("test3", order.get(2).getName());
+		Assert.assertEquals("test4", order.get(3).getName());
+		Assert.assertEquals("test5", order.get(4).getName());
+	}
+
+	@Test
+	public void swapIndex() {
+		List<Integer> list = Arrays.asList(7, 2, 8, 9);
+		ListUtil.swapTo(list, 8, 1);
+		Assert.assertEquals(8, (int) list.get(1));
+	}
+
+	@Test
+	public void swapElement() {
+		Map<String, String> map1 = new HashMap<>();
+		map1.put("1", "张三");
+		Map<String, String> map2 = new HashMap<>();
+		map2.put("2", "李四");
+		Map<String, String> map3 = new HashMap<>();
+		map3.put("3", "王五");
+		List<Map<String, String>> list = Arrays.asList(map1, map2, map3);
+		ListUtil.swapElement(list, map2, map3);
+		Map<String, String> map = list.get(2);
+		Assert.assertEquals("李四", map.get("2"));
 	}
 }

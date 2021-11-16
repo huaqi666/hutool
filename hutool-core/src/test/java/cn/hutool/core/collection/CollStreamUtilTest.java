@@ -18,6 +18,7 @@ import java.util.Set;
  * CollectionStream测试方法
  */
 public class CollStreamUtilTest {
+
 	@Test
 	public void testToIdentityMap() {
 		Map<Long, Student> map = CollStreamUtil.toIdentityMap(null, Student::getStudentId);
@@ -81,6 +82,7 @@ public class CollStreamUtilTest {
 		Assert.assertEquals(map, compare);
 	}
 
+	@Test
 	public void testGroupBy2Key() {
 		Map<Long, Map<Long, List<Student>>> map = CollStreamUtil.groupBy2Key(null, Student::getTermId, Student::getClassId);
 		Assert.assertEquals(map, Collections.EMPTY_MAP);

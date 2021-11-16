@@ -22,19 +22,30 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
+import javax.swing.ImageIcon;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.color.ColorSpace;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.ColorConvertOp;
 import java.awt.image.ColorModel;
+import java.awt.image.FilteredImageSource;
+import java.awt.image.ImageFilter;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -451,9 +462,9 @@ public class ImgUtil {
 	}
 
 	/**
-	 * 图像切割（指定切片的行数和列数）
+	 * 图像切割（指定切片的行数和列数），默认RGB模式
 	 *
-	 * @param srcImage 源图像
+	 * @param srcImage 源图像，如果非{@link BufferedImage}，则默认使用RGB模式
 	 * @param destDir  切片目标文件夹
 	 * @param rows     目标切片行数。默认2，必须是范围 [1, 20] 之内
 	 * @param cols     目标切片列数。默认2，必须是范围 [1, 20] 之内
@@ -1167,8 +1178,8 @@ public class ImgUtil {
 	 */
 	public static BufferedImage toBufferedImage(Image image, String imageType) {
 		final int type = IMAGE_TYPE_PNG.equalsIgnoreCase(imageType)
-				 ? BufferedImage.TYPE_INT_ARGB
-				 : BufferedImage.TYPE_INT_RGB;
+				? BufferedImage.TYPE_INT_ARGB
+				: BufferedImage.TYPE_INT_RGB;
 		return toBufferedImage(image, type);
 	}
 
@@ -1188,9 +1199,10 @@ public class ImgUtil {
 			if (imageType != bufferedImage.getType()) {
 				bufferedImage = copyImage(image, imageType);
 			}
-		} else {
-			bufferedImage = copyImage(image, imageType);
+			return bufferedImage;
 		}
+
+		bufferedImage = copyImage(image, imageType);
 		return bufferedImage;
 	}
 
@@ -1241,12 +1253,33 @@ public class ImgUtil {
 	 * @since 4.5.17
 	 */
 	public static BufferedImage copyImage(Image img, int imageType, Color backgroundColor) {
-		final BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), imageType);
+		// ensures that all the pixels loaded
+		// issue#1821@Github
+		img = new ImageIcon(img).getImage();
+
+		final BufferedImage bimage = new BufferedImage(
+				img.getWidth(null), img.getHeight(null), imageType);
 		final Graphics2D bGr = GraphicsUtil.createGraphics(bimage, backgroundColor);
 		bGr.drawImage(img, 0, 0, null);
 		bGr.dispose();
 
 		return bimage;
+	}
+
+	/**
+	 * 创建与当前设备颜色模式兼容的 {@link BufferedImage}
+	 *
+	 * @param width        宽度
+	 * @param height       高度
+	 * @param transparency 透明模式，见 {@link java.awt.Transparency}
+	 * @return {@link BufferedImage}
+	 * @since 5.7.13
+	 */
+	public static BufferedImage createCompatibleImage(int width, int height, int transparency) throws HeadlessException {
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		GraphicsDevice gs = ge.getDefaultScreenDevice();
+		GraphicsConfiguration gc = gs.getDefaultConfiguration();
+		return gc.createCompatibleImage(width, height, transparency);
 	}
 
 	/**
@@ -1652,7 +1685,7 @@ public class ImgUtil {
 	 * @return {@link Image}
 	 * @since 5.5.8
 	 */
-	public static Image getImage(URL url){
+	public static Image getImage(URL url) {
 		return Toolkit.getDefaultToolkit().getImage(url);
 	}
 
@@ -2147,5 +2180,56 @@ public class ImgUtil {
 	 */
 	public static BufferedImage backgroundRemoval(ByteArrayOutputStream outputStream, Color override, int tolerance) {
 		return BackgroundRemoval.backgroundRemoval(outputStream, override, tolerance);
+	}
+
+	/**
+	 * 图片颜色转换<br>
+	 * 可以使用灰度 (gray)等
+	 *
+	 * @param colorSpace 颜色模式，如灰度等
+	 * @param image      被转换的图片
+	 * @return 转换后的图片
+	 * @since 5.7.8
+	 */
+	public static BufferedImage colorConvert(ColorSpace colorSpace, BufferedImage image) {
+		return filter(new ColorConvertOp(colorSpace, null), image);
+	}
+
+	/**
+	 * 转换图片<br>
+	 * 可以使用一系列平移 (translation)、缩放 (scale)、翻转 (flip)、旋转 (rotation) 和错切 (shear) 来构造仿射变换。
+	 *
+	 * @param xform 2D仿射变换，它执行从 2D 坐标到其他 2D 坐标的线性映射，保留了线的“直线性”和“平行性”。
+	 * @param image 被转换的图片
+	 * @return 转换后的图片
+	 * @since 5.7.8
+	 */
+	public static BufferedImage transform(AffineTransform xform, BufferedImage image) {
+		return filter(new AffineTransformOp(xform, null), image);
+	}
+
+	/**
+	 * 图片过滤转换
+	 *
+	 * @param op    过滤操作实现，如二维转换可传入{@link AffineTransformOp}
+	 * @param image 原始图片
+	 * @return 过滤后的图片
+	 * @since 5.7.8
+	 */
+	public static BufferedImage filter(BufferedImageOp op, BufferedImage image) {
+		return op.filter(image, null);
+	}
+
+	/**
+	 * 图片滤镜，借助 {@link ImageFilter}实现，实现不同的图片滤镜
+	 *
+	 * @param filter 滤镜实现
+	 * @param image  图片
+	 * @return 滤镜后的图片
+	 * @since 5.7.8
+	 */
+	public static Image filter(ImageFilter filter, Image image) {
+		return Toolkit.getDefaultToolkit().createImage(
+				new FilteredImageSource(image.getSource(), filter));
 	}
 }
